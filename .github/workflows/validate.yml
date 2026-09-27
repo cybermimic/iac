@@ -1,0 +1,40 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: yamllint
+        uses: karancode/yamllint-github-action@v3.0.0
+        with:
+          yamllint_config_filepath: .yamllint.yml
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+
+      - name: shellcheck
+        run: |
+          if find . -name '*.sh' -not -path './.git/*' | grep -q .; then
+            sudo apt-get update && sudo apt-get install -y shellcheck
+            find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck
+          fi
+
+      - name: terraform fmt/validate
+        run: |
+          if find infrastructure features -name '*.tf' 2>/dev/null | grep -q .; then
+            terraform fmt -check -recursive infrastructure features
+          fi
+
+      - name: ansible-lint
+        run: |
+          if find bootstrap -name '*.yml' 2>/dev/null | grep -q .; then
+            pip install ansible-lint
+            ansible-lint bootstrap
+          fi

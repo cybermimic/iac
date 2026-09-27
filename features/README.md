@@ -1,0 +1,32 @@
+# features
+
+Une feature représente une **capacité de plateforme**, pas une application
+métier (celles-ci vivent dans des repos séparés, voir racine du repo).
+
+## Statut
+
+Squelette — aucune feature n'est encore implémentée. Les sous-dossiers
+(`networking/metallb/`, `security/vault/`, etc.) seront créés au fur et à
+mesure, jamais par anticipation.
+
+## Convention
+
+```
+features/<domaine>/<feature>/
+    terraform/   # si la feature a des ressources Terraform propres
+    ansible/     # si la feature nécessite une configuration hôte
+    gitops/      # manifestes/Application ArgoCD
+    docs/        # au-delà du README court obligatoire
+```
+
+Ne créer que les couches réellement nécessaires à la feature.
+
+Chaque feature doit avoir un `README.md` documentant : objectif,
+dépendances (autres features requises), inputs, outputs, installation,
+upgrade, rollback, troubleshooting, et une estimation approximative
+CPU/RAM/stockage (contrainte : 16 Go RAM sur le cluster actuel).
+
+## Domaines prévus
+
+`networking/`, `security/`, `storage/`, `observability/`, `delivery/`,
+`ai/` — voir [docs/architecture.md](../docs/architecture.md).

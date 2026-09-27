@@ -1,0 +1,4 @@
+---
+# Paquet Ubuntu natif (pas de dépôt tiers) — plus simple, moins de surface
+# à maintenir. Épinglé via apt-mark hold après installation, jamais "latest".
+containerd_config_path: /etc/containerd/config.toml

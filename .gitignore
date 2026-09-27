@@ -1,0 +1,42 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Secrets / credentials — never commit these
+*.pem
+*.key
+kubeconfig*
+!kubeconfig*.example
+*.env
+.env.*
+!*.env.example
+vault-unseal-keys*
+vault-root-token*
+*-secret.yaml
+*-secrets.yaml
+!*.secret.example.yaml
+
+# SOPS/Age — public keys are fine, never commit private keys
+*.agekey
+age-key.txt
+
+# Ansible
+*.retry
+bootstrap/ansible/inventory/hosts.yml
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Local tooling
+.direnv/

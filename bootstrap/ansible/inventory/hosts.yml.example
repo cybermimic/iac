@@ -1,0 +1,10 @@
+# Copier en hosts.yml (ignoré par git) et adapter à ton parc de machines.
+# Ne jamais committer d'IP/username réels si le repo devient public — ici ce
+# n'est pas un secret mais reste spécifique à un déploiement.
+all:
+  children:
+    k8s_nodes:
+      hosts:
+        nucboxg3-plus:
+          ansible_host: 192.168.1.253
+          ansible_user: hoarauv

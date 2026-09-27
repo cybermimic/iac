@@ -1,0 +1,8 @@
+---
+# Série mineure de Kubernetes — verrouille le dépôt APT à cette ligne (ex:
+# v1.36 seulement, jamais v1.37+ implicitement). Le patch exact installé est
+# ensuite gelé par apt-mark hold, pas par un numéro de version en dur ici :
+# les dépôts pkgs.k8s.io ne conservent pas les anciens patches, épingler une
+# version précise casserait l'idempotence sur une machine déjà à jour.
+kubernetes_series: "1.36"
+kubernetes_apt_keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
