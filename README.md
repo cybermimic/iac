@@ -46,7 +46,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTPS auto-signé en attendant cert-manager |
 | `networking/lan-dns` (CoreDNS) | ✅ DNS de tout le LAN via la Freebox (`*.homelab.lan` → ingress) — ⚠️ LAN sans DNS si le NucBox est arrêté ([ADR-007](docs/adr/ADR-007-lan-dns.md)) |
-| `security/cert-manager` (CA interne) | ⏭️ Prochaine étape ([ADR-006](docs/adr/ADR-006-ingress-and-internal-tls.md)) |
+| `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
 | `delivery/argocd`, `observability/*`, `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)

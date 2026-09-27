@@ -35,3 +35,10 @@ module "lan_dns" {
   # pointe vers lui. Pas de dépendance MetalLB (hostNetwork, voir ADR-007).
   wildcard_target_ip = module.ingress.load_balancer_ip
 }
+
+module "cert_manager" {
+  source = "../../../features/security/cert-manager/terraform"
+
+  # La CA interne ne peut signer que pour ce domaine (name constraint).
+  domain = var.homelab_domain
+}

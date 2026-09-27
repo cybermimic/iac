@@ -58,9 +58,9 @@ Exemple : un navigateur du LAN ouvre `https://vault.homelab.lan`.
 ```
 
 État actuel de cette chaîne : les étapes DNS → MetalLB → Traefik
-fonctionnent depuis tout le LAN. **Aucun service n'est encore publié**
-derrière Traefik (il répond `404`) et le HTTPS utilise un certificat
-auto-signé : c'est l'objet de `security/cert-manager`, étape suivante.
+fonctionnent depuis tout le LAN, et la CA interne (cert-manager) est
+prête à signer. **Aucun service n'est encore publié** derrière Traefik (il
+répond `404`) : premier service prévu, Vault en HTTPS.
 
 ## 3. Les composants
 
@@ -72,6 +72,7 @@ auto-signé : c'est l'objet de `security/cert-manager`, étape suivante.
 | Vault | Coffre à secrets (initialisé, 1 Gi de données sur `local-path`) | `vault` | Terraform (serveur) + humain (init / unseal) | [security/vault](../features/security/vault/README.md) |
 | Traefik | Ingress : porte d'entrée HTTP(S) unique, `192.168.1.240` | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
 | CoreDNS « lan-dns » | DNS de tout le LAN (`*.homelab.lan` + relais vers la Freebox) | `lan-dns` | Terraform + réglages Freebox | [networking/lan-dns](../features/networking/lan-dns/README.md) |
+| cert-manager + CA interne | Émet et renouvelle les certificats TLS des services, signés par « Homelab Root CA » (limitée à `homelab.lan`, [certificat public](homelab-root-ca.crt) à installer sur les postes) | `cert-manager` | Terraform | [security/cert-manager](../features/security/cert-manager/README.md) |
 
 Les pods « système » (apiserver, etcd, calico-node, kube-proxy, speaker
 MetalLB, lan-dns) utilisent directement le réseau du NucBox
@@ -98,7 +99,7 @@ token Vault (chez l'opérateur humain), le kubeconfig, tout secret
 ```
 MetalLB ──► Traefik (IP .240) ──► lan-dns (le wildcard pointe vers Traefik)
                   │
-                  └──► (bientôt) cert-manager ──► services en HTTPS (Vault…)
+                  └──► services en HTTPS (Vault…) ◄── cert-manager (CA interne)
 local-path ──► Vault (volume de données)
 Freebox (DHCP/DNS) ──► lan-dns ──► tout le LAN
 ```
