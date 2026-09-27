@@ -9,7 +9,8 @@ applications business référencées depuis leurs propres repos).
 **Cette première version installe ArgoCD seul, sans aucune
 `Application`.** La structure GitOps (quel repo/chemin ArgoCD suit, « app
 of apps » ou `ApplicationSet`, quelles features basculent de Terraform
-vers ArgoCD) est une décision à prendre à part, puis à acter (ADR).
+vers ArgoCD) est une décision à prendre à part : proposition dans
+[ADR-008](../../../docs/adr/ADR-008-gitops-layout.md) (statut « Proposé »).
 
 ## Accès
 
