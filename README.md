@@ -56,9 +56,12 @@ limitations connues (pas de backend Terraform distant, notamment).
 
 ## Démarrage
 
-Chaque couche (`bootstrap/`, `infrastructure/`, `features/<name>/`) a son
-propre README avec objectif, dépendances, installation, upgrade, rollback
-et troubleshooting. Commencer par `docs/architecture.md`.
+Commencer par **[docs/platform-overview.md](docs/platform-overview.md)** :
+ce qui tourne, le plan d'adressage, le chemin d'une requête et où chaque
+chose est configurée. Puis `docs/architecture.md` pour la cible. Chaque
+couche (`bootstrap/`, `infrastructure/`, `features/<name>/`) a son propre
+README avec objectif, dépendances, installation, upgrade, rollback et
+troubleshooting.
 
 ## Validation locale
 

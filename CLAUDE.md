@@ -22,6 +22,7 @@ Répondre en **français**. Messages de commit et titres de PR en **anglais**
 | Sujet | Doc |
 |---|---|
 | Vue d'ensemble / statut | [README.md](README.md) |
+| Ce qui tourne, IP, chemin d'une requête, où est configuré quoi | [docs/platform-overview.md](docs/platform-overview.md) |
 | Architecture cible | [docs/architecture.md](docs/architecture.md) |
 | Faits opérationnels (accès, state, dette) | [docs/operations.md](docs/operations.md) |
 | Décisions | [docs/adr/](docs/adr/) |
