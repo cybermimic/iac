@@ -1,6 +1,9 @@
 # Copier en hosts.yml (ignoré par git) et adapter à ton parc de machines.
 # Ne jamais committer d'IP/username réels si le repo devient public — ici ce
 # n'est pas un secret mais reste spécifique à un déploiement.
+#
+# Inventaire unique du parc, utilisé par bootstrap/ansible et par les
+# playbooks des features (features/*/ansible).
 all:
   children:
     k8s_nodes:
@@ -8,3 +11,12 @@ all:
         nucboxg3-plus:
           ansible_host: 192.168.1.253
           ansible_user: hoarauv
+
+    # Nœud(s) qui hébergent networking/lan-dns (hostNetwork) : ils doivent
+    # utiliser directement le DNS amont, pas lan-dns lui-même.
+    lan_dns_nodes:
+      hosts:
+        nucboxg3-plus:
+          lan_dns_node_connection: netplan-enp3s0   # nmcli -t -f NAME,DEVICE con show --active
+          lan_dns_node_interface: enp3s0
+          lan_dns_node_upstream_dns: ["192.168.1.254"]

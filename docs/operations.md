@@ -91,7 +91,9 @@ d'urgence (sur la Freebox, depuis n'importe quel appareil connecté en
 tapant `http://192.168.1.254`) : README de `features/networking/lan-dns`,
 section Rollback. Le NucBox lui-même utilise directement la Freebox comme
 DNS (sinon il dépendrait de son propre pod au démarrage) — réglage
-NetworkManager manuel, **pas encore porté dans Ansible**.
+NetworkManager fait à la main le 2026-09-27, désormais décrit par le
+playbook `features/networking/lan-dns/ansible/playbook.yml` (écrit et
+linté, **pas encore exécuté** : nécessite `-K`).
 
 ## Calico
 

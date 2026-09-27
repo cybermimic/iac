@@ -89,7 +89,7 @@ endroits, à connaître avant de modifier quoi que ce soit :
 | **Ce repo → Terraform** (`infrastructure/environments/homelab` + `features/*/terraform`) | Tout ce qui tourne dans Kubernetes au-dessus du socle : MetalLB, local-path, Vault, Traefik, lan-dns | Modifier le repo → synchroniser vers le répertoire d'état → `plan` → `apply` (voir [operations.md](operations.md)) |
 | **Répertoire d'état** `/home/hoarauv/.homelab-platform-state/` sur le NucBox | Le `terraform.tfstate` qui fait autorité + `terraform.tfvars` (valeurs propres au réseau : plages IP, adresses du DNS) | Jamais à la main, sauf `terraform.tfvars` ([ADR-005](adr/ADR-005-terraform-state.md)) |
 | **La Freebox** (`http://192.168.1.254`) | Plage DHCP, bail statique du NucBox, DNS distribués (IPv4 : `192.168.1.253` ; IPv6 forcé : IPv6 du NucBox) | Interface web Freebox OS, mode avancé — documenté dans [lan-dns](../features/networking/lan-dns/README.md) |
-| **Le NucBox (hôte)** | Paquets Kubernetes/containerd, réseau Calico, DNS propre du NucBox (utilise directement la Freebox, NetworkManager) | Manuel pour l'instant ; cible : playbook Ansible `bootstrap/` ([ADR-001](adr/ADR-001-terraform-scope.md)) |
+| **Le NucBox (hôte)** | Paquets Kubernetes/containerd, réseau Calico, DNS propre du NucBox (utilise directement la Freebox, NetworkManager) | Ansible ([ADR-001](adr/ADR-001-terraform-scope.md)) : `bootstrap/ansible` (paquets) et `features/*/ansible` (ex. DNS propre du NucBox) — playbooks écrits mais **jamais exécutés**, l'état actuel a été fait à la main |
 
 Et ce qui n'est **jamais** dans le repo : les clés d'unseal et le root
 token Vault (chez l'opérateur humain), le kubeconfig, tout secret
@@ -134,6 +134,6 @@ Les features ajoutées jusqu'ici pèsent peu : MetalLB ~50 Mi, local-path
 
 Tenue à jour dans [operations.md](operations.md) (sections « Limitations
 connues », « DNS du LAN », « Calico ») : pas de backend Terraform distant, bootstrap Ansible jamais
-exécuté, TLS de Vault terminé à l'ingress (HTTP dans le cluster), réglage DNS du NucBox non porté dans
-Ansible, incohérence volontaire du `cluster-cidr` (Calico), clé SSH
+exécuté, TLS de Vault terminé à l'ingress (HTTP dans le cluster), playbook DNS du NucBox
+(lan-dns) écrit mais pas encore exécuté, incohérence volontaire du `cluster-cidr` (Calico), clé SSH
 partagée GitHub/NucBox.

@@ -34,8 +34,8 @@ DNS (voir Rollback).
   (passé en input depuis l'output du module, dans
   `infrastructure/environments/homelab/main.tf`).
 - Hors Terraform : bail DHCP statique du NucBox (`192.168.1.253`) sur la
-  Freebox, et préfixe IPv6 fixe de la ligne Free (l'IPv6 du NucBox en
-  dérive).
+  Freebox, préfixe IPv6 fixe de la ligne Free (l'IPv6 du NucBox en
+  dérive), et configuration DNS propre du nœud (playbook `ansible/`).
 
 ## Ressources approximatives
 
@@ -106,16 +106,27 @@ Le NucBox reçoit aussi le DHCP de la Freebox : sans réglage, il
 s'interrogerait lui-même. Au redémarrage, avant que le pod soit lancé, il
 n'aurait plus de DNS (apt, téléchargement d'images…). Il est donc
 configuré pour ignorer les DNS annoncés et utiliser directement la
-Freebox (NetworkManager, connexion `netplan-enp3s0`, `sudo`) :
+Freebox. C'est une configuration d'hôte (ADR-001), portée par le playbook
+[`ansible/playbook.yml`](ansible/playbook.yml) de cette feature
+(NetworkManager via le module `nmcli` ; Ubuntu répercute le réglage dans
+`/etc/netplan/90-NM-<uuid>.yaml`).
+
+Inventaire : groupe `lan_dns_nodes` de l'inventaire du parc
+(`bootstrap/ansible/inventory/hosts.yml`, voir `hosts.yml.example`), avec
+`lan_dns_node_connection`, `lan_dns_node_interface` et
+`lan_dns_node_upstream_dns`.
 
 ```bash
-sudo nmcli con mod netplan-enp3s0 ipv4.ignore-auto-dns yes ipv4.dns 192.168.1.254 ipv6.ignore-auto-dns yes
-sudo nmcli con up netplan-enp3s0
+cd features/networking/lan-dns/ansible
+ansible-galaxy collection install -r ../../../../bootstrap/ansible/requirements.yml
+ansible-playbook -i ../../../../bootstrap/ansible/inventory/hosts.yml playbook.yml --check --diff -K   # dry-run
+ansible-playbook -i ../../../../bootstrap/ansible/inventory/hosts.yml playbook.yml -K
 resolvectl status enp3s0     # DNS Servers: 192.168.1.254 uniquement
 ```
 
-À porter dans le playbook Ansible de `bootstrap/` (configuration hôte,
-ADR-001) — pas encore fait.
+Équivalent manuel (ce qui a été fait à la main le 2026-09-27, avant le
+playbook) :
+`sudo nmcli con mod netplan-enp3s0 ipv4.ignore-auto-dns yes ipv4.dns 192.168.1.254 ipv6.ignore-auto-dns yes && sudo nmcli con up netplan-enp3s0`.
 
 ## Upgrade
 

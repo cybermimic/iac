@@ -30,9 +30,10 @@ if find infrastructure features -name '*.tf' -print -quit 2>/dev/null | grep -q 
   run_check "terraform fmt" terraform fmt -check -recursive infrastructure features
 fi
 
-# Ansible
-if find bootstrap -name '*.yml' -print -quit 2>/dev/null | grep -q .; then
-  run_check "ansible-lint" ansible-lint bootstrap
+# Ansible : bootstrap + couches ansible/ des features
+mapfile -t ansible_dirs < <(find bootstrap features -type d -name ansible -not -path '*/.git/*' 2>/dev/null)
+if [ "${#ansible_dirs[@]}" -gt 0 ]; then
+  run_check "ansible-lint" ansible-lint "${ansible_dirs[@]}"
 fi
 
 # YAML

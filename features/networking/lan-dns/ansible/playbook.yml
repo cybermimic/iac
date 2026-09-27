@@ -1,0 +1,45 @@
+---
+# Le nœud qui héberge lan-dns ne doit PAS utiliser lan-dns comme DNS : il
+# reçoit pourtant ce DNS du DHCP / de l'IPv6 de la Freebox, et au
+# démarrage, avant que le pod soit lancé, il n'aurait plus aucun DNS (apt,
+# téléchargement d'images…). On lui fait ignorer les DNS annoncés et
+# utiliser directement le DNS amont (la Freebox).
+#
+# Voir features/networking/lan-dns/README.md et ADR-007.
+#
+# Via NetworkManager (module nmcli) : sur Ubuntu, la modification est
+# répercutée par NetworkManager dans /etc/netplan/90-NM-<uuid>.yaml.
+- name: Make the lan-dns node use the upstream DNS directly
+  hosts: lan_dns_nodes
+  become: true
+  tasks:
+    - name: Check required variables
+      ansible.builtin.assert:
+        that:
+          - lan_dns_node_connection is defined
+          - lan_dns_node_interface is defined
+          - lan_dns_node_upstream_dns is defined
+          - lan_dns_node_upstream_dns | length > 0
+        fail_msg: >-
+          Définir lan_dns_node_connection (ex: netplan-enp3s0),
+          lan_dns_node_interface (ex: enp3s0) et lan_dns_node_upstream_dns
+          (ex: ["192.168.1.254"]) dans l'inventaire.
+
+    - name: Ignore advertised DNS servers and use the upstream DNS only
+      community.general.nmcli:
+        conn_name: "{{ lan_dns_node_connection }}"
+        ifname: "{{ lan_dns_node_interface }}"
+        type: ethernet
+        dns4: "{{ lan_dns_node_upstream_dns }}"
+        dns4_ignore_auto: true
+        dns6_ignore_auto: true
+        state: present
+      notify: Reapply connection
+
+  handlers:
+    - name: Reapply connection
+      # Réapplique la connexion pour que le changement de DNS prenne effet
+      # sans attendre un redémarrage (coupure réseau de 1-2 s).
+      ansible.builtin.command:
+        cmd: nmcli connection up "{{ lan_dns_node_connection }}"
+      changed_when: true

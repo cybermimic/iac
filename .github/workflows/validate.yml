@@ -85,4 +85,4 @@ jobs:
       - name: ansible-lint
         run: |
           ansible-galaxy collection install -r bootstrap/ansible/requirements.yml
-          ansible-lint bootstrap
+          find bootstrap features -type d -name ansible -print0 | xargs -0 ansible-lint
