@@ -23,9 +23,9 @@ variable "homelab_domain" {
   default     = "homelab.lan"
 }
 
-variable "lan_dns_load_balancer_ip" {
-  description = "IP LAN fixe du DNS du homelab (ex: 192.168.1.241), dans la plage metallb_ip_range."
-  type        = string
+variable "lan_dns_listen_addresses" {
+  description = "Adresses IPv4 LAN + IPv6 globale du nœud sur lesquelles le DNS du homelab écoute (ex: [\"192.168.1.253\", \"2a01:...\"]). Ce sont les DNS à déclarer dans le routeur."
+  type        = list(string)
 }
 
 variable "lan_dns_upstream_servers" {

@@ -80,6 +80,17 @@ le rechercher comme référence.
   section 3). Après un reboot, les services qui dépendent de Vault ne
   fonctionnent pas tant que cet unseal n'est pas fait.
 
+## DNS du LAN — dépendance au NucBox
+
+Depuis le 2026-09-27, la Freebox distribue le DNS du homelab
+(`networking/lan-dns`, pod sur le NucBox) à **tout le LAN**. NucBox
+arrêté ou pod en panne = plus aucun appareil ne résout de nom. Rollback
+d'urgence (sur la Freebox, depuis n'importe quel appareil connecté en
+tapant `http://192.168.1.254`) : README de `features/networking/lan-dns`,
+section Rollback. Le NucBox lui-même utilise directement la Freebox comme
+DNS (sinon il dépendrait de son propre pod au démarrage) — réglage
+NetworkManager manuel, **pas encore porté dans Ansible**.
+
 ## Calico
 
 - Réseau des pods : pool Calico `10.244.0.0/16` (migré depuis

@@ -8,9 +8,10 @@ metallb_ip_range = "192.168.1.240-192.168.1.250" # vérifier que c'est hors plag
 # déclarer dans le DNS du routeur ou /etc/hosts (voir ADR-006).
 ingress_load_balancer_ip = "192.168.1.240"
 
-# DNS du homelab (voir ADR-007) : IP fixe dans metallb_ip_range, et DNS
+# DNS du homelab (voir ADR-007) : adresses du nœud (IPv4 LAN fixe via bail
+# DHCP statique + IPv6 globale stable) sur lesquelles il écoute, et DNS
 # amont (le routeur) pour tout ce qui n'est pas *.homelab.lan.
-lan_dns_load_balancer_ip = "192.168.1.241"
+lan_dns_listen_addresses = ["192.168.1.253", "2a01:e0a:818:4440:e251:d8ff:fe1c:4928"]
 lan_dns_upstream_servers = ["192.168.1.254"]
 
 # kubeconfig_path n'a volontairement pas d'exemple ici : fournis-le via

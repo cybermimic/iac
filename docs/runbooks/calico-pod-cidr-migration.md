@@ -109,7 +109,7 @@ l'opérateur humain pour l'unseal.**
 
 5. **Tester** depuis un pod jetable : résolution `example.com` via le DNS
    du cluster, connexion à `192.168.1.254:80`, puis
-   `dig @192.168.1.241 example.com`.
+   `dig @<dns-du-homelab> example.com` (voir `features/networking/lan-dns`).
 
 ## Rollback
 

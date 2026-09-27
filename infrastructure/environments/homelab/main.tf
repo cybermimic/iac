@@ -27,12 +27,11 @@ module "ingress" {
 module "lan_dns" {
   source = "../../../features/networking/lan-dns/terraform"
 
-  load_balancer_ip     = var.lan_dns_load_balancer_ip
+  listen_addresses     = var.lan_dns_listen_addresses
   domain               = var.homelab_domain
   upstream_dns_servers = var.lan_dns_upstream_servers
 
-  # Dépendance explicite sur l'ingress via son output (tout *.<domain> pointe
-  # vers lui), et sur MetalLB pour l'IP LoadBalancer.
+  # Dépendance explicite sur l'ingress via son output : tout *.<domain>
+  # pointe vers lui. Pas de dépendance MetalLB (hostNetwork, voir ADR-007).
   wildcard_target_ip = module.ingress.load_balancer_ip
-  depends_on         = [module.metallb]
 }

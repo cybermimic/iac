@@ -4,18 +4,20 @@ variable "namespace" {
   default     = "lan-dns"
 }
 
-variable "chart_version" {
-  description = "Version du chart Helm coredns/coredns (toujours explicite, jamais latest)"
+variable "coredns_version" {
+  description = "Tag de l'image coredns/coredns (toujours explicite, jamais latest)"
   type        = string
-  default     = "1.47.1"
+  default     = "1.14.6"
 }
 
-variable "load_balancer_ip" {
+variable "listen_addresses" {
   description = <<-EOT
-    IP LAN fixe du serveur DNS (UDP+TCP 53), dans la plage MetalLB. C'est
-    l'IP à déclarer comme serveur DNS sur les postes clients / le DHCP.
+    Adresses du nœud sur lesquelles le DNS écoute (UDP+TCP 53, hostNetwork) :
+    son IPv4 LAN et son IPv6 globale. Ce sont les adresses à déclarer comme
+    DNS dans le routeur (DHCP IPv4 et DNS IPv6). Ex:
+    ["192.168.1.253", "2a01:e0a:818:4440:e251:d8ff:fe1c:4928"].
   EOT
-  type        = string
+  type        = list(string)
 }
 
 variable "domain" {
@@ -35,6 +37,18 @@ variable "upstream_dns_servers" {
     défaut : dépend du réseau.
   EOT
   type        = list(string)
+}
+
+variable "health_port" {
+  description = "Port HTTP du endpoint /health (sur le réseau du nœud, doit être libre sur l'hôte)"
+  type        = number
+  default     = 8053
+}
+
+variable "ready_port" {
+  description = "Port HTTP du endpoint /ready (sur le réseau du nœud, doit être libre sur l'hôte)"
+  type        = number
+  default     = 8054
 }
 
 variable "requests_cpu" {
