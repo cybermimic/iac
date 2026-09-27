@@ -3,6 +3,9 @@
 *.tfstate
 *.tfstate.*
 *.tfplan
+# Valeurs propres à un déploiement (réseau, adresses) : seul l'exemple est versionné
+*.tfvars
+!*.tfvars.example
 crash.log
 crash.*.log
 override.tf
