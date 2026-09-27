@@ -26,3 +26,15 @@ variable "tolerate_control_plane_taint" {
   type        = bool
   default     = true
 }
+
+variable "ignore_exclude_lb_label" {
+  description = <<-EOT
+    Fait annoncer les IP par le speaker même sur un nœud portant le label
+    node.kubernetes.io/exclude-from-external-load-balancers (posé par kubeadm
+    sur les control-planes). Nécessaire tant que le cluster est single-node,
+    sinon aucune IP LoadBalancer n'est joignable depuis le LAN. À repasser à
+    false une fois un nœud worker dédié ajouté.
+  EOT
+  type        = bool
+  default     = true
+}

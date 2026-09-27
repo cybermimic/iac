@@ -66,7 +66,7 @@ Vérification :
 ```bash
 kubectl -n traefik get pods,svc          # pod Running, EXTERNAL-IP = load_balancer_ip
 kubectl get ingressclass                 # traefik (default)
-curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.240/   # 404 attendu : aucune route encore
+curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.240/   # 404 attendu ; à lancer depuis un AUTRE poste du LAN
 ```
 
 ## Résolution des noms

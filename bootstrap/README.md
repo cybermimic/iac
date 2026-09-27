@@ -27,7 +27,12 @@ Aucune — c'est la première couche, prérequis à tout le reste.
 
 - `kubeadm init` / `kubeadm join` — étape manuelle et délibérée (décide du
   rôle control-plane vs worker), volontairement hors automatisation pour
-  l'instant.
+  l'instant. **Pour un nouveau cluster, le réseau des pods ne doit jamais
+  chevaucher le LAN** : `kubeadm init --pod-network-cidr=10.244.0.0/16`,
+  et la même valeur dans `CALICO_IPV4POOL_CIDR` du manifeste Calico. Le
+  défaut Calico (`192.168.0.0/16`) englobe le LAN `192.168.1.0/24` et
+  coupe les pods du LAN — voir
+  [le runbook de migration](../docs/runbooks/calico-pod-cidr-migration.md).
 - Ressources Kubernetes (namespaces, CRDs, Helm releases) — voir
   `../infrastructure/`.
 

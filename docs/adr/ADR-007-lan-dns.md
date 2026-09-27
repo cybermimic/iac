@@ -22,11 +22,13 @@ fixe MetalLB (`192.168.1.241`) :
   ajouter quand un service est publié) ;
 - tout le reste → transféré au DNS de la Freebox.
 
-La façon dont les postes l'utilisent (DHCP de la Freebox, ou règle de
-résolution par domaine sur chaque poste) est tranchée après test réel sur
-un poste client, à cause de l'annonce DNS IPv6 de la Freebox qui peut
-court-circuiter un DNS distribué en IPv4 : voir le README de la feature,
-section « Configuration des postes ».
+Les postes l'utilisent via une **règle de résolution par domaine**
+(`.homelab.lan` → `192.168.1.241` : NRPT sous Windows, `Domains=~homelab.lan`
+avec systemd-resolved), **pas** via le DHCP de la Freebox. Constaté sur le
+poste Windows : il reçoit aussi le DNS IPv6 de la Freebox
+(`fd0f:ee:b0::1`), qui ne connaît pas `homelab.lan` et aurait court-circuité
+un DNS distribué par le DHCP IPv4. Détail : README de la feature, section
+« Configuration des postes ».
 
 ## Alternatives considérées
 
@@ -41,10 +43,12 @@ section « Configuration des postes ».
 
 ## Conséquences
 
-- Si le NucBox (ou le pod) est arrêté, les noms `*.homelab.lan` ne
-  résolvent plus. Selon la configuration des postes, la résolution
-  Internet peut aussi être affectée : c'est pourquoi le DNS de la Freebox
-  reste toujours configuré en secours.
+- Si le NucBox (ou le pod) est arrêté, seuls les noms `*.homelab.lan` ne
+  résolvent plus ; Internet n'est jamais affecté (les postes gardent le DNS
+  de la Freebox pour tout le reste).
+- Chaque poste qui doit accéder au homelab est configuré une fois. Les
+  appareils sans réglage DNS par domaine (téléphones) ne sont pas couverts
+  pour l'instant.
 - Le domaine `homelab.lan` n'est pas un TLD réservé. Il ne doit jamais être
   utilisé pour autre chose que ce homelab ; `home.arpa` (RFC 8375) reste
   une alternative si un conflit apparaît.

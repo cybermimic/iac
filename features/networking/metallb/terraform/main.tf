@@ -16,6 +16,16 @@ resource "helm_release" "metallb" {
   wait    = true
   timeout = 300
 
+  # kubeadm pose le label node.kubernetes.io/exclude-from-external-load-balancers
+  # sur les control-planes, et le speaker ignore par défaut les nœuds qui le
+  # portent : sur un cluster single-node, plus personne n'annonce les IP en
+  # ARP et elles sont injoignables depuis le LAN (joignables uniquement depuis
+  # le nœud lui-même, ce qui masque le problème).
+  set {
+    name  = "speaker.ignoreExcludeLB"
+    value = var.ignore_exclude_lb_label
+  }
+
   dynamic "set" {
     for_each = var.tolerate_control_plane_taint ? {
       "controller.tolerations[0].key"      = "node-role.kubernetes.io/control-plane"

@@ -62,9 +62,37 @@ Sous Windows : `nslookup vault.homelab.lan 192.168.1.241`.
 
 ## Configuration des postes
 
-À finaliser après test réel (voir ADR-007) : la Freebox annonce aussi son
-DNS en IPv6, ce qui peut faire interroger la Freebox (qui ne connaît pas
-`homelab.lan`) au lieu de ce DNS, même si le DHCP IPv4 le distribue.
+**Règle par domaine sur chaque poste** : seuls les noms `*.homelab.lan`
+sont envoyés à `192.168.1.241`, tout le reste continue d'utiliser le DNS
+habituel. Le DHCP de la Freebox n'est **pas** modifié (pourquoi : ADR-007
+— la Freebox annonce son DNS en IPv6, constaté sur un poste Windows, ce
+qui court-circuiterait un DNS distribué par le DHCP IPv4).
+
+**Windows** (PowerShell **administrateur**, une seule fois) :
+
+```powershell
+Add-DnsClientNrptRule -Namespace ".homelab.lan" -NameServers "192.168.1.241"
+Resolve-DnsName vault.homelab.lan          # -> 192.168.1.240
+```
+
+Retrait :
+`Get-DnsClientNrptRule | Where-Object Namespace -eq ".homelab.lan" | Remove-DnsClientNrptRule -Force`
+
+**Linux avec systemd-resolved** (`sudo`) — fichier
+`/etc/systemd/resolved.conf.d/homelab.conf` :
+
+```ini
+[Resolve]
+DNS=192.168.1.241
+Domains=~homelab.lan
+```
+
+puis `sudo systemctl restart systemd-resolved` et
+`resolvectl query vault.homelab.lan`.
+
+**Téléphones / appareils sans réglage DNS par domaine** : pas couverts
+pour l'instant (ils résolvent Internet normalement, mais pas
+`*.homelab.lan`).
 
 ## Upgrade
 

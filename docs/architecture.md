@@ -58,7 +58,7 @@ single-node.
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé et initialisé — unseal manuel (humain) après chaque redémarrage |
 | `networking/ingress` (Traefik, [ADR-006](adr/ADR-006-ingress-and-internal-tls.md)) | ✅ Déployé — HTTPS auto-signé en attendant cert-manager |
-| `networking/lan-dns` (CoreDNS, [ADR-007](adr/ADR-007-lan-dns.md)) | ✅ Déployé — configuration des postes en cours |
+| `networking/lan-dns` (CoreDNS, [ADR-007](adr/ADR-007-lan-dns.md)) | ✅ Déployé — postes configurés par règle DNS par domaine |
 | `security/cert-manager` (CA interne) | ⏭️ Prochaine étape |
 | `delivery/argocd`, `observability/*` | ❌ Pas commencé |
 | `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |

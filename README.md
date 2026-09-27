@@ -40,12 +40,12 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 
 | Feature | Statut |
 |---|---|
-| `networking/metallb` | ✅ Déployé et fonctionnel |
+| `networking/metallb` | ✅ Déployé — IP joignables depuis le LAN depuis le 2026-09-27 (annonce L2 corrigée) |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé et initialisé — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTPS auto-signé en attendant cert-manager |
-| `networking/lan-dns` (CoreDNS) | ✅ Déployé sur `192.168.1.241` (`*.homelab.lan` → ingress) — configuration des postes en cours ([ADR-007](docs/adr/ADR-007-lan-dns.md)) |
+| `networking/lan-dns` (CoreDNS) | ✅ Déployé sur `192.168.1.241` (`*.homelab.lan` → ingress) — postes configurés par règle DNS par domaine ([ADR-007](docs/adr/ADR-007-lan-dns.md)) |
 | `security/cert-manager` (CA interne) | ⏭️ Prochaine étape ([ADR-006](docs/adr/ADR-006-ingress-and-internal-tls.md)) |
 | `delivery/argocd`, `observability/*`, `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 
