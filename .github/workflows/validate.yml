@@ -9,8 +9,11 @@ on:
 # change de comportement tout seul n'est pas un check. Les monter ensemble
 # avec les versions locales (voir ./hack/test.sh).
 env:
-  YAMLLINT_VERSION: "1.37.1"
+  # ansible-lint 26.1.1 exige yamllint >= 1.38.0 ; ansible-core épinglé
+  # aussi (sinon ansible-lint tire la dernière version publiée).
+  YAMLLINT_VERSION: "1.38.0"
   ANSIBLE_LINT_VERSION: "26.1.1"
+  ANSIBLE_CORE_VERSION: "2.20.1"
   TERRAFORM_VERSION: "1.15.8"
   TERRAFORM_SHA256: "d25ce7b6902013ad905db3d2eab0be4cd905887fe88b81a6171b8d5503c31f3d"
   GITLEAKS_VERSION: "8.18.4"
@@ -30,7 +33,8 @@ jobs:
         run: |
           python3 -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/pip" install --quiet \
-            "yamllint==${YAMLLINT_VERSION}" "ansible-lint==${ANSIBLE_LINT_VERSION}"
+            "yamllint==${YAMLLINT_VERSION}" "ansible-lint==${ANSIBLE_LINT_VERSION}" \
+            "ansible-core==${ANSIBLE_CORE_VERSION}"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
 
       - name: yamllint
