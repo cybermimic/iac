@@ -19,7 +19,7 @@ Aucune — c'est la première couche, prérequis à tout le reste.
   containerd utilisent des cgroup drivers différents et le nœud ne devient
   jamais `Ready`).
 - `roles/kubernetes_node` — swap désactivé, dépôt APT `pkgs.k8s.io` épinglé
-  sur une série mineure (`kubernetes_series`, ex. `1.36`), installation de
+  sur une série mineure (`kubernetes_node_series`, ex. `1.36`), installation de
   `kubelet`/`kubeadm`/`kubectl`, `apt-mark hold` pour geler la version après
   install.
 
@@ -35,12 +35,13 @@ Aucune — c'est la première couche, prérequis à tout le reste.
 
 - `inventory/hosts.yml` (copier depuis `hosts.yml.example`, ignoré par git)
   — définit les machines cibles, `ansible_host`/`ansible_user` par hôte.
-- `kubernetes_series` (rôle `kubernetes_node`, défaut `1.36`).
+- `kubernetes_node_series` (rôle `kubernetes_node`, défaut `1.36`).
 
 ## Installation
 
 ```bash
 cd bootstrap/ansible
+ansible-galaxy collection install -r requirements.yml  # collections épinglées
 cp inventory/hosts.yml.example inventory/hosts.yml   # puis adapter
 ansible-playbook playbook.yml --check --diff -K      # dry-run, demande le mot de passe sudo
 ansible-playbook playbook.yml -K                     # exécution réelle
@@ -51,7 +52,7 @@ sudo sans mot de passe configuré actuellement.
 
 ## Upgrade
 
-Monter `kubernetes_series` (ex. `1.36` → `1.37`) est un changement de
+Monter `kubernetes_node_series` (ex. `1.36` → `1.37`) est un changement de
 version mineure Kubernetes à part entière, à traiter avec la procédure
 d'upgrade officielle de kubeadm (drain, upgrade control-plane, upgrade
 nœuds un par un) — ne pas se contenter de relancer ce playbook sur un

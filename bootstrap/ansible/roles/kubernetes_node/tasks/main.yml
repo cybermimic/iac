@@ -29,19 +29,19 @@
 
 - name: Fetch Kubernetes apt signing key
   ansible.builtin.get_url:
-    url: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_series }}/deb/Release.key"
+    url: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_node_series }}/deb/Release.key"
     dest: /tmp/kubernetes-release.key
     mode: "0644"
   changed_when: false
 
 - name: Dearmor Kubernetes apt signing key
   ansible.builtin.shell:
-    cmd: "gpg --dearmor -o {{ kubernetes_apt_keyring }} < /tmp/kubernetes-release.key"
-    creates: "{{ kubernetes_apt_keyring }}"
+    cmd: "gpg --dearmor -o {{ kubernetes_node_apt_keyring }} < /tmp/kubernetes-release.key"
+    creates: "{{ kubernetes_node_apt_keyring }}"
 
 - name: Add Kubernetes apt repository
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by={{ kubernetes_apt_keyring }}] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_series }}/deb/ /"
+    repo: "deb [signed-by={{ kubernetes_node_apt_keyring }}] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_node_series }}/deb/ /"
     filename: kubernetes
     state: present
     update_cache: true

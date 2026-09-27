@@ -1,0 +1,8 @@
+---
+# Collections Ansible utilisées par les rôles (community.general.modprobe,
+# ansible.posix.sysctl). Versions épinglées, jamais "latest".
+collections:
+  - name: community.general
+    version: "12.1.0"
+  - name: ansible.posix
+    version: "2.1.0"

@@ -5,36 +5,72 @@ on:
   push:
     branches: [main]
 
+# Toutes les versions sont épinglées (runner, actions, outils) : un check qui
+# change de comportement tout seul n'est pas un check. Les monter ensemble
+# avec les versions locales (voir ./hack/test.sh).
+env:
+  YAMLLINT_VERSION: "1.37.1"
+  ANSIBLE_LINT_VERSION: "26.1.1"
+  TERRAFORM_VERSION: "1.15.8"
+  TERRAFORM_SHA256: "d25ce7b6902013ad905db3d2eab0be4cd905887fe88b81a6171b8d5503c31f3d"
+  GITLEAKS_VERSION: "8.18.4"
+  GITLEAKS_SHA256: "ba6dbb656933921c775ee5a2d1c13a91046e7952e9d919f9bac4cec61d628e7d"
+
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # gitleaks scanne tout l'historique, pas seulement le dernier commit
+
+      # Un venv plutôt que `pip install` global : Ubuntu 24.04 refuse les
+      # installations pip hors venv (PEP 668).
+      - name: Install Python linters
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet \
+            "yamllint==${YAMLLINT_VERSION}" "ansible-lint==${ANSIBLE_LINT_VERSION}"
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
 
       - name: yamllint
-        uses: karancode/yamllint-github-action@v3.0.0
-        with:
-          yamllint_config_filepath: .yamllint.yml
+        run: yamllint --strict .
 
+      # Binaire officiel plutôt que gitleaks-action, qui exige une licence
+      # payante sur les repos d'organisation.
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        run: |
+          curl -sSLo "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" detect --source . --redact --verbose
 
       - name: shellcheck
         run: |
           if find . -name '*.sh' -not -path './.git/*' | grep -q .; then
-            sudo apt-get update && sudo apt-get install -y shellcheck
             find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck
           fi
 
-      - name: terraform fmt/validate
+      - name: Install Terraform
         run: |
-          if find infrastructure features -name '*.tf' 2>/dev/null | grep -q .; then
-            terraform fmt -check -recursive infrastructure features
-          fi
+          curl -sSLo "$RUNNER_TEMP/terraform.zip" \
+            "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          echo "${TERRAFORM_SHA256}  $RUNNER_TEMP/terraform.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/terraform.zip" -d "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive infrastructure features
+
+      # -backend=false : valide la configuration sans toucher à aucun state.
+      - name: terraform validate
+        working-directory: infrastructure/environments/homelab
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
 
       - name: ansible-lint
         run: |
-          if find bootstrap -name '*.yml' 2>/dev/null | grep -q .; then
-            pip install ansible-lint
-            ansible-lint bootstrap
-          fi
+          ansible-galaxy collection install -r bootstrap/ansible/requirements.yml
+          ansible-lint bootstrap

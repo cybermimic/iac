@@ -4,5 +4,5 @@
 # ensuite gelé par apt-mark hold, pas par un numéro de version en dur ici :
 # les dépôts pkgs.k8s.io ne conservent pas les anciens patches, épingler une
 # version précise casserait l'idempotence sur une machine déjà à jour.
-kubernetes_series: "1.36"
-kubernetes_apt_keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+kubernetes_node_series: "1.36"
+kubernetes_node_apt_keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
