@@ -36,27 +36,12 @@ TF_VAR_kubeconfig_path=$KUBECONFIG terraform plan
 TF_VAR_kubeconfig_path=$KUBECONFIG terraform apply
 ```
 
-## ⚠️ Migration depuis une installation manuelle existante
+## Historique
 
-Sur ce cluster, MetalLB `v0.14.8` a été appliqué manuellement (manifeste brut
-upstream, hors Helm/Terraform) et est actuellement **cassé** :
-
-- `controller` reste `Pending` — taint control-plane non toléré.
-- `speaker` reste `ContainerCreating` — secret `memberlist` jamais créé.
-
-Comme ces ressources n'ont pas les annotations de propriété Helm, un premier
-`helm_release` via ce module échouera avec des erreurs "resource already
-exists and is not managed by Helm". Avant le premier `apply`, nettoyer
-l'installation manuelle existante :
-
-```bash
-kubectl delete deployment,daemonset,serviceaccount,clusterrole,clusterrolebinding,role,rolebinding -n metallb-system -l app=metallb
-kubectl delete namespace metallb-system
-```
-
-Les CRDs `*.metallb.io` peuvent rester (le chart les gère aussi en upsert).
-Cette migration n'a pas encore été exécutée — à faire explicitement, en
-dehors de ce commit, une fois validée.
+Une ancienne installation manuelle (manifeste brut `v0.14.8`, cassée) a
+été remplacée par ce module Terraform/Helm. MetalLB est aujourd'hui
+entièrement géré par Terraform (release Helm + `IPAddressPool` +
+`L2Advertisement`) — ne plus appliquer de manifeste MetalLB à la main.
 
 ## Upgrade
 

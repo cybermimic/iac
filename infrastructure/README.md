@@ -3,22 +3,19 @@
 Ressources déclaratives gérées par Terraform : providers Kubernetes/Helm
 uniquement. Voir [docs/adr/ADR-001-terraform-scope.md](../docs/adr/ADR-001-terraform-scope.md).
 
-## Statut
-
-Squelette — `environments/homelab/` sera ajouté à l'étape suivante, une
-fois le provider Kubernetes configuré sans kubeconfig en dur (variable
-d'environnement `KUBECONFIG` ou équivalent, jamais de chemin utilisateur
-codé en dur).
-
-## Structure prévue
+## Structure
 
 ```
 infrastructure/
-├── modules/            # modules réutilisables
 └── environments/
-    └── homelab/         # seul environnement aujourd'hui ; dev/staging/prod
-                          # s'ajouteront via variables, pas via duplication
+    └── homelab/         # seul environnement aujourd'hui ; assemble les
+                          # modules de features/*/terraform/
 ```
+
+Les modules réutilisables vivent dans `features/<domaine>/<feature>/terraform/`.
+D'autres environnements (dev/staging/prod) s'ajouteront via variables, pas
+via duplication. Le kubeconfig est toujours injecté via
+`TF_VAR_kubeconfig_path`, jamais codé en dur.
 
 ## Règles
 

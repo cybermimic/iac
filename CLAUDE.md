@@ -12,6 +12,28 @@ un peu plus longue mais évidente : choisir l'évidente. Le système doit
 rester compréhensible par un humain qui découvre le repo pour la première
 fois.
 
+## Langue
+
+Répondre en **français**. Messages de commit et titres de PR en **anglais**
+(Conventional Commits : `feat(vault): …`, `docs: …`, `chore: …`).
+
+## Lire en priorité
+
+| Sujet | Doc |
+|---|---|
+| Vue d'ensemble / statut | [README.md](README.md) |
+| Architecture cible | [docs/architecture.md](docs/architecture.md) |
+| Faits opérationnels (accès, state, dette) | [docs/operations.md](docs/operations.md) |
+| Décisions | [docs/adr/](docs/adr/) |
+| Une feature précise | `features/<domaine>/<feature>/README.md` |
+
+## Stack (versions réelles)
+
+Ubuntu 26.04, Kubernetes 1.36.1 (kubeadm), containerd 2.2.2, Calico,
+Terraform 1.15.x, Vault 2.0.4 (chart `hashicorp/vault`), MetalLB chart
+0.14.9, local-path-provisioner v0.0.31.
+Mettre à jour cette ligne à chaque montée de version.
+
 ## Ne jamais faire
 
 - **Terraform** : pas de `local-exec`/`remote-exec`, pas de script shell
@@ -69,6 +91,69 @@ fois.
 - **Avant tout commit/push** : faire tourner `./hack/test.sh`, vérifier
   qu'aucun fichier de `.gitignore` (secrets, state, kubeconfig) n'a été
   ajouté par erreur (`git status` après un `git add` large).
+
+## Ne pas inventer
+
+Un choix non acté (ex. contrôleur d'ingress, stack d'observabilité,
+outil de registry) n'est **pas** tranché par l'agent : présenter 2-3
+options avec leur empreinte RAM et laisser l'humain décider, puis
+l'acter dans une ADR avant d'implémenter.
+
+## Posture par défaut sur le cluster
+
+- **Lecture libre** : `kubectl get/describe/logs`, `terraform plan`,
+  `vault status` — sans demander.
+- **Écriture sur demande explicite uniquement** : `terraform apply`,
+  `kubectl apply/delete/edit`, `helm`, tout ce qui modifie le cluster ou
+  le répertoire de state. Toujours montrer le `plan` et attendre un OK.
+- **Jamais par l'agent** : opérations qui affichent un secret (`vault
+  operator init`, `vault login`, lecture de secrets K8s/Vault). Donner la
+  commande, l'humain l'exécute dans son propre terminal.
+- **Vault après reboot** : pod `vault-0` en `0/1` + `Sealed: true` =
+  unseal manuel à faire par l'humain. Ne jamais tenter de "réparer"
+  (redéployer, relancer `init`), le signaler et attendre.
+
+## Interaction
+
+- Toujours : état constaté → plan court → une étape → validation →
+  étape suivante. Pas de "tout d'un coup".
+- Si une permission est refusée : ne pas contourner avec un autre outil ;
+  s'arrêter, expliquer, et donner à l'humain la commande exacte à lancer.
+- Suppression (fichiers non suivis, branches) : lister ce qui sera
+  supprimé et pourquoi avant d'agir ; c'est à l'humain de valider.
+- Proposer de mettre à jour le titre/la description d'une PR si le
+  travail évolue — seulement après OK explicite (`gh pr edit`).
+
+## Process Git
+
+- **Phase de setup (jusqu'à ce que le POC soit en place)** : commits
+  directement sur `main`, pas de branche ni de PR. Une fois le POC en
+  place, cette exception disparaît et les règles ci-dessous s'appliquent.
+- Hors phase de setup : 1 changement = 1 branche = 1 PR ; `git fetch
+  origin` avant de brancher ; jamais de commit direct sur `main`. Nom de
+  branche : `<type>/<sujet-court>` (ex. `feat/ingress`,
+  `docs/vault-initialized`).
+- Remote en SSH (`git@github.com:cybermimic/iac`), pas HTTPS.
+- Toute feature livrée met à jour **dans le même changement** : son
+  README, le tableau de statut du README racine et `docs/architecture.md`.
+
+## Qualité du code
+
+- Terraform : chaque `variable` a `description` + `type` ; une valeur par
+  défaut seulement si elle est raisonnable pour tous ; `outputs.tf` et
+  `versions.tf` par module ; pas de logique cachée (`count`/`for_each`
+  obscurs, `templatefile` pour contourner un provider).
+- Un module par feature, assemblé dans
+  `infrastructure/environments/homelab/main.tf` — dépendances passées
+  explicitement par outputs → inputs, pas de `depends_on` sans commentaire.
+- Commentaires : expliquer le **pourquoi** (contrainte, bug évité), pas le
+  quoi.
+
+## Validation
+
+`./hack/test.sh` : un `SKIP` n'est **pas** un `OK`. Signaler explicitement
+quels checks n'ont pas tourné. `terraform fmt` vert ≠ `terraform validate`
+vert ≠ `plan` propre.
 
 ## Naming
 

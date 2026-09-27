@@ -25,7 +25,7 @@ Voir `terraform/variables.tf` et `terraform/outputs.tf`.
 
 ## Ce que ce module fait — et ne fait PAS
 
-Terraform déploie uniquement le **serveur Vault scellé** (Helm chart
+Terraform déploie uniquement le **serveur Vault** (Helm chart
 officiel `hashicorp/vault`, mode standalone). Il ne fait **jamais** :
 
 - `vault operator init`
@@ -42,34 +42,38 @@ jamais via un outil tiers ou une IA qui verrait passer ces secrets.
 ## 1. Installation
 
 Fait partie de `infrastructure/environments/homelab` comme les autres
-features (voir son README). Résultat : un pod Vault `Running` mais
-**scellé** (`Sealed: true`) — normal et attendu, aucune donnée n'est
-accessible avant l'étape 2/3.
+features (voir son README). Un pod fraîchement démarré est **scellé**
+(`Sealed: true`, pod `0/1` Ready) — aucune donnée n'est accessible avant
+l'unseal (étape 3).
 
-## 2. Initialisation (`vault operator init`)
+## 2. Initialisation — déjà faite, ne jamais relancer
 
-À faire une seule fois, dans le terminal de l'opérateur humain :
+Vault a été initialisé le 2026-09-27 (Shamir, 5 clés, seuil 3). Les
+unseal keys et le root token sont détenus par l'opérateur humain, hors
+du cluster et hors de ce repo.
 
-```bash
-kubectl -n vault exec -it vault-0 -- vault operator init -key-shares=5 -key-threshold=3
-```
+**Ne jamais relancer `vault operator init`** sur ce Vault : ce n'est
+nécessaire que pour un Vault vierge (nouveau volume de données, ou
+reconstruction complète après perte des données). Dans ce cas seulement,
+reprendre la procédure depuis la documentation officielle, toujours
+exécutée par un humain dans son propre terminal.
 
-Affiche 5 unseal keys et le root token. **Ne jamais les coller dans un
-fichier du repo, un chat, un ticket, ou tout autre canal non chiffré.**
-Options recommandées pour homelab :
-
-- gestionnaire de mots de passe (1Password, Bitwarden, etc.) ;
-- ou copie chiffrée hors ligne (ex. `age`/GPG) sur un support séparé du
-  cluster lui-même (sinon perte du disque = perte des clés ET des
-  données).
+Rangement des clés : gestionnaire de mots de passe **et** copie hors du
+NucBox (perte du disque = perte des clés ET des données sinon). Jamais
+dans un fichier du repo, un chat, un ticket ou tout canal non chiffré.
 
 ## 3. Unseal (`vault operator unseal`)
 
-Après chaque redémarrage du pod Vault (le scellement est en mémoire) :
+Après chaque redémarrage du pod Vault (reboot du NucBox inclus — le
+scellement est en mémoire), dans le terminal de l'opérateur humain :
 
 ```bash
-kubectl -n vault exec -it vault-0 -- vault operator unseal   # x3, avec 3 des 5 clés
+kubectl -n vault exec vault-0 -- vault status                # Sealed: true ?
+kubectl -n vault exec -it vault-0 -- vault operator unseal   # x3, avec 3 clés différentes
 ```
+
+Ne jamais passer une clé en argument (elle finirait dans l'historique du
+shell) : la commande sans argument la demande en saisie masquée.
 
 Pour un homelab single-node, l'auto-unseal (KMS cloud, Transit d'un autre
 Vault) est disproportionné — l'unseal manuel reste acceptable tant qu'il y
@@ -142,8 +146,9 @@ pas affecté par un rollback du chart seul.
 
 ## Troubleshooting
 
-- Pod `Running` mais `vault status` indique `Sealed: true` → normal, voir
-  étape 3.
+- Pod `Running` mais `0/1` Ready, `vault status` indique `Sealed: true` →
+  normal après un redémarrage du pod ou du NucBox, voir étape 3 (unseal).
+  Ne **pas** relancer `vault operator init`.
 - TLS interne désactivé dans cette version — à durcir dès qu'un ingress
   avec cert-manager existe (voir `features/networking/ingress`, pas encore
   implémenté).

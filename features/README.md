@@ -5,9 +5,9 @@ métier (celles-ci vivent dans des repos séparés, voir racine du repo).
 
 ## Statut
 
-Squelette — aucune feature n'est encore implémentée. Les sous-dossiers
-(`networking/metallb/`, `security/vault/`, etc.) seront créés au fur et à
-mesure, jamais par anticipation.
+Features implémentées : `networking/metallb`, `storage/local-path`,
+`security/vault` (statut détaillé : [README racine](../README.md)). Les
+suivantes sont créées au fur et à mesure, jamais par anticipation.
 
 ## Convention
 

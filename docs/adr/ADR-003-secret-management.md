@@ -33,7 +33,7 @@ Mécanismes utilisés selon le contexte :
 
 Le bootstrap initial de Vault (installation, initialisation, unseal) est
 traité comme une opération distincte et documentée séparément du
-déploiement normal — voir `features/security/vault/README.md` (à créer).
+déploiement normal — voir `features/security/vault/README.md`.
 
 ## Alternatives considérées
 

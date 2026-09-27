@@ -56,7 +56,7 @@ single-node.
 | Kubernetes (kubeadm, single-node, Calico) | ✅ En place |
 | `networking/metallb` | ✅ Déployé |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
-| `security/vault` | ✅ Déployé, scellé — init/unseal restent une action humaine manuelle |
+| `security/vault` | ✅ Déployé et initialisé — unseal manuel (humain) après chaque redémarrage |
 | `networking/ingress`, `delivery/argocd`, `observability/*` | ❌ Pas commencé |
 | `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |

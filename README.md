@@ -41,7 +41,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 |---|---|
 | `networking/metallb` | ✅ Déployé et fonctionnel |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
-| `security/vault` | ✅ Déployé, **scellé** (init/unseal manuels restants) |
+| `security/vault` | ✅ Déployé et initialisé — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress`, `delivery/argocd`, `observability/*`, `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 

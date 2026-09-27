@@ -54,10 +54,11 @@ sans avoir d'abord vérifié l'absence de drift.
 Avant la remise à plat de ce repo, un répertoire `/home/hoarauv/iac`
 existait sur le NucBox avec du Terraform/Ansible expérimental jamais
 committé (branches locales `chore/terraform`, `chore/kubeadm-install`).
-Le commit utile (`chore/kubeadm-install`) a été rapatrié dans l'historique
-Git de ce repo. Le reste (module Vault cassé avec `local-exec` et erreur
-de syntaxe, scripts d'installation incomplets) a été volontairement
-abandonné, pas migré — ne pas aller le rechercher comme référence.
+Rien n'en a été migré : le script de `chore/kubeadm-install` est remplacé
+par le rôle Ansible `bootstrap/ansible/roles/kubernetes_node`, et le reste
+(module Vault cassé avec `local-exec` et erreur de syntaxe, scripts
+d'installation incomplets) a été volontairement abandonné — ne pas aller
+le rechercher comme référence.
 
 ## Limitations connues / dette technique
 
@@ -73,9 +74,11 @@ abandonné, pas migré — ne pas aller le rechercher comme référence.
 - **TLS interne désactivé sur Vault** — ClusterIP uniquement, pas
   d'exposition externe. À durcir dès que `networking/ingress` +
   cert-manager existent (voir `features/security/vault/README.md`).
-- **Vault non initialisé** — serveur déployé et scellé, `vault operator
-  init`/`unseal` restent une opération manuelle humaine, jamais automatisée
-  (voir `features/security/vault/README.md`, sections 1 à 3).
+- **Unseal Vault manuel** — Vault est initialisé, mais se re-scelle à
+  chaque redémarrage du pod ou du NucBox : l'unseal reste une opération
+  humaine, jamais automatisée (voir `features/security/vault/README.md`,
+  section 3). Après un reboot, les services qui dépendent de Vault ne
+  fonctionnent pas tant que cet unseal n'est pas fait.
 
 ## Checklist avant de reprendre le travail sur une nouvelle machine
 
