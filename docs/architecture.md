@@ -57,7 +57,9 @@ single-node.
 | `networking/metallb` | ✅ Déployé |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé et initialisé — unseal manuel (humain) après chaque redémarrage |
-| `networking/ingress`, `delivery/argocd`, `observability/*` | ❌ Pas commencé |
+| `networking/ingress` (Traefik, [ADR-006](adr/ADR-006-ingress-and-internal-tls.md)) | ✅ Déployé — HTTPS auto-signé en attendant cert-manager |
+| `security/cert-manager` (CA interne) | ⏭️ Prochaine étape |
+| `delivery/argocd`, `observability/*` | ❌ Pas commencé |
 | `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |
 

@@ -72,8 +72,8 @@ le rechercher comme référence.
   NucBox. À séparer proprement (clé dédiée par usage) quand l'occasion se
   présente.
 - **TLS interne désactivé sur Vault** — ClusterIP uniquement, pas
-  d'exposition externe. À durcir dès que `networking/ingress` +
-  cert-manager existent (voir `features/security/vault/README.md`).
+  d'exposition externe. `networking/ingress` est en place ; à durcir dès que
+  `security/cert-manager` existe (voir `features/security/vault/README.md`).
 - **Unseal Vault manuel** — Vault est initialisé, mais se re-scelle à
   chaque redémarrage du pod ou du NucBox : l'unseal reste une opération
   humaine, jamais automatisée (voir `features/security/vault/README.md`,

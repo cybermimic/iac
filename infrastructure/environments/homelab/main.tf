@@ -13,3 +13,13 @@ module "vault" {
 
   storage_class_name = module.local_path_storage.storage_class_name
 }
+
+module "ingress" {
+  source = "../../../features/networking/ingress/terraform"
+
+  load_balancer_ip = var.ingress_load_balancer_ip
+
+  # Dépend de MetalLB : sans IPAddressPool, le Service LoadBalancer de
+  # Traefik resterait <pending> et le helm_release (wait = true) échouerait.
+  depends_on = [module.metallb]
+}

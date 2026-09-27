@@ -30,7 +30,8 @@ Répondre en **français**. Messages de commit et titres de PR en **anglais**
 ## Stack (versions réelles)
 
 Ubuntu 26.04, Kubernetes 1.36.1 (kubeadm), containerd 2.2.2, Calico,
-Terraform 1.15.x, Vault 2.0.4 (chart `hashicorp/vault`), MetalLB chart
+Terraform 1.15.x, Vault 2.0.4 (chart `hashicorp/vault`), Traefik v3.7.13
+(chart `traefik/traefik` 41.6.0), MetalLB chart
 0.14.9, local-path-provisioner v0.0.31.
 Mettre à jour cette ligne à chaque montée de version.
 

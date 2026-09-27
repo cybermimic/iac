@@ -11,3 +11,8 @@ variable "metallb_ip_range" {
   description = "Plage d'IP LAN pour MetalLB (ex: 192.168.1.240-192.168.1.250), hors plage DHCP du routeur."
   type        = string
 }
+
+variable "ingress_load_balancer_ip" {
+  description = "IP LAN fixe de l'ingress Traefik (ex: 192.168.1.240), dans la plage metallb_ip_range."
+  type        = string
+}

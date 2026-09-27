@@ -150,5 +150,5 @@ pas affecté par un rollback du chart seul.
   normal après un redémarrage du pod ou du NucBox, voir étape 3 (unseal).
   Ne **pas** relancer `vault operator init`.
 - TLS interne désactivé dans cette version — à durcir dès qu'un ingress
-  avec cert-manager existe (voir `features/networking/ingress`, pas encore
-  implémenté).
+  avec cert-manager existe (`networking/ingress` est déployé, reste
+  `security/cert-manager`).

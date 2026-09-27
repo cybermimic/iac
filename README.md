@@ -43,7 +43,9 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé et initialisé — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
-| `networking/ingress`, `delivery/argocd`, `observability/*`, `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
+| `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTPS auto-signé en attendant cert-manager |
+| `security/cert-manager` (CA interne) | ⏭️ Prochaine étape ([ADR-006](docs/adr/ADR-006-ingress-and-internal-tls.md)) |
+| `delivery/argocd`, `observability/*`, `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)
 pour le détail des décisions déjà prises, et
