@@ -117,22 +117,45 @@ kubectl -n cert-manager get secret homelab-root-ca -o jsonpath='{.data.ca\.crt}'
 openssl x509 -in docs/homelab-root-ca.crt -noout -fingerprint -sha256
 ```
 
-Puis sur chaque poste, une fois :
+Si l'empreinte change (CA régénérée), la reporter dans ce README et dans
+les deux scripts de [`clients/`](clients/) : `./hack/test.sh` (check
+« homelab CA fingerprint », aussi exécuté en CI) échoue tant qu'ils ne
+concordent pas.
 
-- **Windows** (PowerShell **administrateur**) :
+Puis sur chaque poste, une fois, avec les **scripts de [`clients/`](clients/)**.
+Ils récupèrent le certificat (GitHub par défaut, ou un fichier local avec
+`-Source` / `--source`), **refusent de l'installer si l'empreinte ne
+correspond pas à celle épinglée dans le script**, ne font rien s'il est
+déjà installé (relançables sans risque) et savent le retirer.
+
+- **Windows** (PowerShell **administrateur**, depuis un clone du repo ou
+  après avoir téléchargé le script) :
 
   ```powershell
-  certutil -dump homelab-root-ca.crt | findstr /i "sha256"      # comparer l'empreinte
-  Import-Certificate -FilePath .\homelab-root-ca.crt -CertStoreLocation Cert:\LocalMachine\Root
+  .\install-homelab-ca.ps1 -Check       # vérifie seulement
+  .\install-homelab-ca.ps1              # installe
+  .\install-homelab-ca.ps1 -Uninstall   # retire
   ```
 
-  (ou double-clic → Installer le certificat → Ordinateur local →
-  **Autorités de certification racines de confiance**). Chrome et Edge
-  utilisent ce magasin ; Firefox aussi par défaut sur Windows. Retrait :
-  `certmgr.msc` → Autorités de certification racines de confiance →
-  supprimer « Homelab Root CA ».
-- **Linux (Ubuntu)** : `sudo cp homelab-root-ca.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates`.
-- **Android / iOS** : voir les réglages « Installer un certificat CA » /
+  Si l'exécution de scripts est bloquée :
+  `powershell -ExecutionPolicy Bypass -File .\install-homelab-ca.ps1`.
+  Chrome et Edge utilisent ce magasin ; Firefox aussi par défaut sur
+  Windows. Vérification manuelle : `certmgr.msc` → Autorités de
+  certification racines de confiance → « Homelab Root CA ».
+- **Linux Debian/Ubuntu** :
+
+  ```bash
+  ./install-homelab-ca.sh --check       # vérifie seulement
+  sudo ./install-homelab-ca.sh          # installe
+  sudo ./install-homelab-ca.sh --uninstall
+  ```
+
+  Firefox sous Linux a son propre magasin : Paramètres → Vie privée et
+  sécurité → Certificats → Afficher les certificats → Autorités →
+  Importer.
+- **Android / iOS** (pas de script possible) : vérifier l'empreinte
+  affichée par le téléphone, puis voir les réglages « Installer un
+  certificat CA » /
   « Réglages > Général > VPN et gestion de l'appareil », puis sur iOS
   activer la confiance totale dans « Informations > Réglages des
   certificats ».

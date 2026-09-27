@@ -44,4 +44,9 @@ if [ "${#shell_files[@]}" -gt 0 ]; then
   run_check "shellcheck" shellcheck "${shell_files[@]}"
 fi
 
+# CA du homelab : empreinte épinglée dans les scripts = certificat versionné
+if [ -f docs/homelab-root-ca.crt ]; then
+  run_check "homelab CA fingerprint" ./hack/check-ca-fingerprint.sh
+fi
+
 exit "$status"

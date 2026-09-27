@@ -52,6 +52,10 @@ jobs:
             find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck
           fi
 
+      # Empreinte de la CA épinglée dans les scripts clients = certificat versionné.
+      - name: homelab CA fingerprint
+        run: ./hack/check-ca-fingerprint.sh
+
       - name: Install Terraform
         run: |
           curl -sSLo "$RUNNER_TEMP/terraform.zip" \
