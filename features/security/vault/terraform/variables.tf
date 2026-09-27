@@ -58,3 +58,21 @@ variable "tolerate_control_plane_taint" {
   type        = bool
   default     = true
 }
+
+variable "ingress_host" {
+  description = "Nom DNS sous lequel publier Vault via l'ingress (ex: vault.homelab.lan). null = pas de publication."
+  type        = string
+  default     = null
+}
+
+variable "ingress_class_name" {
+  description = "IngressClass à utiliser (output de networking/ingress)"
+  type        = string
+  default     = null
+}
+
+variable "cluster_issuer_name" {
+  description = "ClusterIssuer cert-manager qui signe le certificat (output de security/cert-manager)"
+  type        = string
+  default     = null
+}

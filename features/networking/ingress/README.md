@@ -13,8 +13,8 @@ qu'avec une IP LoadBalancer chacun. Choix et alternatives :
 - `networking/metallb` — fournit l'IP du Service `LoadBalancer`
   (`depends_on` explicite dans `infrastructure/environments/homelab/main.tf`).
 
-Features qui dépendront de celle-ci : `security/cert-manager` (certificats
-TLS), puis toute feature exposée sur le LAN (Vault UI, ArgoCD…).
+Features qui en dépendent : toute feature publiée sur le LAN (aujourd'hui
+`security/vault`), avec ses certificats fournis par `security/cert-manager`.
 
 ## Ressources approximatives
 
@@ -36,12 +36,20 @@ persistant.
 
 `namespace`, `ingress_class_name` (`traefik`), `load_balancer_ip`.
 
+## HTTPS
+
+- **Redirection** : tout le HTTP (port 80) est redirigé en permanence
+  (301) vers HTTPS (443).
+- **Certificats** : fournis par chaque service via cert-manager
+  (annotation `cert-manager.io/cluster-issuer: homelab-ca` sur l'Ingress,
+  voir [security/cert-manager](../../security/cert-manager/README.md)).
+  Un nom sans certificat reçoit le certificat auto-signé par défaut de
+  Traefik (avertissement navigateur).
+- **TLS terminé par Traefik** : entre Traefik et les pods, le trafic reste
+  en HTTP à l'intérieur du cluster.
+
 ## Ce qui est volontairement hors de cette version
 
-- **TLS signé** : Traefik répond en HTTPS avec son certificat auto-signé
-  par défaut (avertissement navigateur) jusqu'à `security/cert-manager`.
-- **Redirection HTTP → HTTPS** : ajoutée avec cert-manager, pas avant
-  (sinon tout serait redirigé vers un certificat non reconnu).
 - **Dashboard exposé** : actif mais accessible uniquement par
   port-forward (voir Troubleshooting) — pas d'exposition sans
   authentification.

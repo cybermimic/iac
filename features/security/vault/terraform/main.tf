@@ -84,3 +84,47 @@ resource "helm_release" "vault" {
     })
   ]
 }
+
+# Publication de Vault (UI + API) sur le LAN via l'ingress, en HTTPS avec un
+# certificat de la CA interne (voir ADR-006). Le TLS est terminé par
+# Traefik : entre Traefik et le pod, le trafic reste en HTTP dans le cluster
+# (listener Vault tls_disable = 1).
+resource "kubernetes_ingress_v1" "vault" {
+  count = var.ingress_host == null ? 0 : 1
+
+  metadata {
+    name      = "vault"
+    namespace = kubernetes_namespace.vault.metadata[0].name
+    annotations = {
+      "cert-manager.io/cluster-issuer" = var.cluster_issuer_name
+    }
+  }
+
+  spec {
+    ingress_class_name = var.ingress_class_name
+
+    tls {
+      hosts       = [var.ingress_host]
+      secret_name = "vault-tls"
+    }
+
+    rule {
+      host = var.ingress_host
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              # Service créé par le chart : nom = nom de la release.
+              name = helm_release.vault.name
+              port {
+                number = 8200
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

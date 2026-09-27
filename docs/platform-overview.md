@@ -58,9 +58,10 @@ Exemple : un navigateur du LAN ouvre `https://vault.homelab.lan`.
 ```
 
 État actuel de cette chaîne : les étapes DNS → MetalLB → Traefik
-fonctionnent depuis tout le LAN, et la CA interne (cert-manager) est
-prête à signer. **Aucun service n'est encore publié** derrière Traefik (il
-répond `404`) : premier service prévu, Vault en HTTPS.
+fonctionnent de bout en bout depuis tout le LAN : `https://vault.homelab.lan`
+est servi par Traefik avec un certificat de la CA interne (reconnu sans
+avertissement sur les postes où la CA est installée), et `http://`
+redirige vers `https://`. Un nom sans service associé répond `404`.
 
 ## 3. Les composants
 
@@ -69,7 +70,7 @@ répond `404`) : premier service prévu, Vault en HTTPS.
 | Kubernetes 1.36 (kubeadm), containerd, Calico v3.28 | Le cluster lui-même, single-node | `kube-system` | Installation manuelle initiale (playbook `bootstrap/` écrit mais jamais exécuté) | [bootstrap](../bootstrap/README.md) |
 | MetalLB | Donne des IP du LAN aux Services `LoadBalancer` et les annonce en ARP | `metallb-system` | Terraform | [networking/metallb](../features/networking/metallb/README.md) |
 | local-path-provisioner | Volumes persistants sur le disque du NucBox (StorageClass par défaut `local-path`, fichiers sous `/opt/local-path-provisioner`) | `local-path-storage` | Terraform | [storage/local-path](../features/storage/local-path/README.md) |
-| Vault | Coffre à secrets (initialisé, 1 Gi de données sur `local-path`) | `vault` | Terraform (serveur) + humain (init / unseal) | [security/vault](../features/security/vault/README.md) |
+| Vault | Coffre à secrets (initialisé, 1 Gi de données sur `local-path`), publié sur `https://vault.homelab.lan` | `vault` | Terraform (serveur) + humain (init / unseal) | [security/vault](../features/security/vault/README.md) |
 | Traefik | Ingress : porte d'entrée HTTP(S) unique, `192.168.1.240` | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
 | CoreDNS « lan-dns » | DNS de tout le LAN (`*.homelab.lan` + relais vers la Freebox) | `lan-dns` | Terraform + réglages Freebox | [networking/lan-dns](../features/networking/lan-dns/README.md) |
 | cert-manager + CA interne | Émet et renouvelle les certificats TLS des services, signés par « Homelab Root CA » (limitée à `homelab.lan`, [certificat public](homelab-root-ca.crt) à installer sur les postes) | `cert-manager` | Terraform | [security/cert-manager](../features/security/cert-manager/README.md) |
@@ -133,6 +134,6 @@ Les features ajoutées jusqu'ici pèsent peu : MetalLB ~50 Mi, local-path
 
 Tenue à jour dans [operations.md](operations.md) (sections « Limitations
 connues », « DNS du LAN », « Calico ») : pas de backend Terraform distant, bootstrap Ansible jamais
-exécuté, Vault sans TLS (en cours), réglage DNS du NucBox non porté dans
+exécuté, TLS de Vault terminé à l'ingress (HTTP dans le cluster), réglage DNS du NucBox non porté dans
 Ansible, incohérence volontaire du `cluster-cidr` (Calico), clé SSH
 partagée GitHub/NucBox.

@@ -8,10 +8,26 @@ persistant (pas de backend externe). `ha.enabled = false` : Raft
 n'apporte de valeur qu'en HA multi-replica, hors scope pour un cluster
 single-node. Voir [ADR-003](../../../docs/adr/ADR-003-secret-management.md).
 
+## Accès
+
+**`https://vault.homelab.lan`** (UI sous `/ui/`, API sous `/v1/`), depuis
+tout le LAN. Publié par un `Ingress` (Traefik) avec un certificat de la CA
+interne (`vault-tls`, renouvelé automatiquement par cert-manager). Le TLS
+est terminé par Traefik ; entre Traefik et le pod, le trafic reste en HTTP
+dans le cluster (listener `tls_disable = 1`). Toute action demande une
+authentification Vault.
+
+Depuis le NucBox sans passer par le LAN :
+`kubectl -n vault port-forward svc/vault 8200:8200`.
+
 ## Dépendances
 
 - `storage/local-path` — la StorageClass doit exister avant Vault (volume
   de données persistant).
+- `networking/ingress` et `security/cert-manager` — pour la publication
+  HTTPS (inputs `ingress_class_name` et `cluster_issuer_name`, passés
+  depuis leurs outputs). Optionnelle : sans `ingress_host`, rien n'est
+  publié.
 
 ## Ressources approximatives
 
@@ -149,6 +165,9 @@ pas affecté par un rollback du chart seul.
 - Pod `Running` mais `0/1` Ready, `vault status` indique `Sealed: true` →
   normal après un redémarrage du pod ou du NucBox, voir étape 3 (unseal).
   Ne **pas** relancer `vault operator init`.
-- TLS interne désactivé dans cette version — à durcir dès qu'un ingress
-  avec cert-manager existe (`networking/ingress` est déployé, reste
-  `security/cert-manager`).
+- Avertissement de certificat dans le navigateur → la CA du homelab n'est
+  pas installée sur ce poste (voir `security/cert-manager`, « Installer la
+  CA sur les postes »).
+- `https://vault.homelab.lan` injoignable → vérifier dans l'ordre : DNS
+  (`nslookup vault.homelab.lan`), Ingress (`kubectl -n vault get
+  ingress,certificate`), pod Vault Ready (scellé = `503`).

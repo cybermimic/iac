@@ -42,9 +42,9 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 |---|---|
 | `networking/metallb` | ✅ Déployé — IP joignables depuis le LAN depuis le 2026-09-27 (annonce L2 corrigée) |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
-| `security/vault` | ✅ Déployé et initialisé — unseal manuel après chaque redémarrage |
+| `security/vault` | ✅ Déployé, initialisé, publié sur `https://vault.homelab.lan` — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
-| `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTPS auto-signé en attendant cert-manager |
+| `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTP → HTTPS, certificats par cert-manager |
 | `networking/lan-dns` (CoreDNS) | ✅ DNS de tout le LAN via la Freebox (`*.homelab.lan` → ingress) — ⚠️ LAN sans DNS si le NucBox est arrêté ([ADR-007](docs/adr/ADR-007-lan-dns.md)) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
 | `delivery/argocd`, `observability/*`, `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |

@@ -56,8 +56,8 @@ single-node.
 | Kubernetes (kubeadm, single-node, Calico) | ✅ En place — réseau des pods migré en `10.244.0.0/16` le 2026-09-27 ([runbook](runbooks/calico-pod-cidr-migration.md)) |
 | `networking/metallb` | ✅ Déployé |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
-| `security/vault` | ✅ Déployé et initialisé — unseal manuel (humain) après chaque redémarrage |
-| `networking/ingress` (Traefik, [ADR-006](adr/ADR-006-ingress-and-internal-tls.md)) | ✅ Déployé — HTTPS auto-signé en attendant cert-manager |
+| `security/vault` | ✅ Déployé, initialisé, publié en HTTPS — unseal manuel (humain) après chaque redémarrage |
+| `networking/ingress` (Traefik, [ADR-006](adr/ADR-006-ingress-and-internal-tls.md)) | ✅ Déployé — HTTP → HTTPS, certificats par cert-manager |
 | `networking/lan-dns` (CoreDNS, [ADR-007](adr/ADR-007-lan-dns.md)) | ✅ DNS de tout le LAN, distribué par la Freebox |
 | `security/cert-manager` (CA interne) | ✅ Déployé — ClusterIssuer `homelab-ca` |
 | `delivery/argocd`, `observability/*` | ❌ Pas commencé |

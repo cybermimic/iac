@@ -3,8 +3,9 @@
 # - IngressClass "traefik" par défaut + CRDs IngressRoute/Middleware ;
 # - pas de Gateway API (CRDs non installés, provider désactivé) ;
 # - dashboard actif mais non exposé (accès par kubectl port-forward) ;
-# - HTTPS servi avec le certificat auto-signé par défaut de Traefik tant que
-#   security/cert-manager n'existe pas.
+# - HTTP (port 80) redirigé en HTTPS (443) de façon permanente ; chaque
+#   service fournit son certificat (cert-manager, CA interne). Un nom sans
+#   certificat reçoit le certificat auto-signé par défaut de Traefik.
 
 locals {
   ingress_class_name = "traefik"
@@ -42,6 +43,21 @@ resource "helm_release" "traefik" {
         enabled        = true
         isDefaultClass = true
         name           = local.ingress_class_name
+      }
+
+      # Tout le HTTP est redirigé vers HTTPS (redirection permanente, 301).
+      ports = {
+        web = {
+          http = {
+            redirections = {
+              entryPoint = {
+                to        = "websecure"
+                scheme    = "https"
+                permanent = true
+              }
+            }
+          }
+        }
       }
 
       resources = {
