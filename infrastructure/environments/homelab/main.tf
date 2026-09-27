@@ -48,3 +48,13 @@ module "cert_manager" {
   # La CA interne ne peut signer que pour ce domaine (name constraint).
   domain = var.homelab_domain
 }
+
+module "argocd" {
+  source = "../../../features/delivery/argocd/terraform"
+
+  # Publication HTTPS : dépendances explicites sur l'ingress et la CA via
+  # leurs outputs.
+  hostname            = "argocd.${var.homelab_domain}"
+  ingress_class_name  = module.ingress.ingress_class_name
+  cluster_issuer_name = module.cert_manager.cluster_issuer_name
+}

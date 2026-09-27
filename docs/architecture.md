@@ -60,7 +60,8 @@ single-node.
 | `networking/ingress` (Traefik, [ADR-006](adr/ADR-006-ingress-and-internal-tls.md)) | ✅ Déployé — HTTP → HTTPS, certificats par cert-manager |
 | `networking/lan-dns` (CoreDNS, [ADR-007](adr/ADR-007-lan-dns.md)) | ✅ DNS de tout le LAN, distribué par la Freebox |
 | `security/cert-manager` (CA interne) | ✅ Déployé — ClusterIssuer `homelab-ca` |
-| `delivery/argocd`, `observability/*` | ❌ Pas commencé |
+| `delivery/argocd` | ⏳ Code prêt, pas encore appliqué |
+| `observability/*` | ❌ Pas commencé |
 | `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |
 
