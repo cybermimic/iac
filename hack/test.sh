@@ -49,4 +49,7 @@ if [ -f docs/homelab-root-ca.crt ]; then
   run_check "homelab CA fingerprint" ./hack/check-ca-fingerprint.sh
 fi
 
+# PowerShell : ASCII pur (Windows PowerShell 5.1 lit les scripts en Windows-1252)
+run_check "powershell ascii" ./hack/check-powershell-ascii.sh
+
 exit "$status"

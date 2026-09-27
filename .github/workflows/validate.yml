@@ -56,6 +56,10 @@ jobs:
       - name: homelab CA fingerprint
         run: ./hack/check-ca-fingerprint.sh
 
+      # Windows PowerShell 5.1 lit les .ps1 sans BOM en Windows-1252.
+      - name: powershell ascii
+        run: ./hack/check-powershell-ascii.sh
+
       - name: Install Terraform
         run: |
           curl -sSLo "$RUNNER_TEMP/terraform.zip" \
