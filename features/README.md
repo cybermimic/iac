@@ -6,7 +6,7 @@ métier (celles-ci vivent dans des repos séparés, voir racine du repo).
 ## Statut
 
 Features implémentées : `networking/metallb`, `networking/ingress`,
-`storage/local-path`, `security/vault` (statut détaillé : [README racine](../README.md)). Les
+`networking/lan-dns`, `storage/local-path`, `security/vault` (statut détaillé : [README racine](../README.md)). Les
 suivantes sont créées au fur et à mesure, jamais par anticipation.
 
 ## Convention

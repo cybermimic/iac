@@ -80,6 +80,22 @@ le rechercher comme référence.
   section 3). Après un reboot, les services qui dépendent de Vault ne
   fonctionnent pas tant que cet unseal n'est pas fait.
 
+## Calico
+
+- Réseau des pods : pool Calico `10.244.0.0/16` (migré depuis
+  `192.168.0.0/16`, qui englobait le LAN et coupait les pods du LAN — voir
+  [le runbook](runbooks/calico-pod-cidr-migration.md)).
+- **Incohérence connue, volontaire** : `--cluster-cidr` du
+  controller-manager, `podSubnet` de `kubeadm-config` et `clusterCIDR` de
+  kube-proxy valent encore `192.168.0.0/16`, et le nœud porte le podCIDR
+  `192.168.0.0/24`. Inutilisés (le CNI utilise `calico-ipam`), et ne pas
+  les modifier sans ré-intégrer le nœud (raison dans le runbook).
+- `calicoctl` n'est **pas** installé sur le NucBox. Pour toute opération
+  Calico, le récupérer dans **la même version que Calico** (v3.28.0
+  aujourd'hui, `kubectl -n kube-system get ds calico-node -o
+  jsonpath='{..image}'`) avec vérification du checksum : voir la section
+  « Prérequis » du runbook.
+
 ## Checklist avant de reprendre le travail sur une nouvelle machine
 
 1. Lire `CLAUDE.md`.

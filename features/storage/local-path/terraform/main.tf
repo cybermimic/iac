@@ -217,6 +217,15 @@ resource "kubernetes_deployment" "provisioner" {
       }
     }
   }
+
+  # `kubectl rollout restart` (opération d'exploitation légitime, ex. runbook
+  # de migration Calico) pose cette annotation : sans cet ignore, Terraform
+  # la retirerait au plan suivant et relancerait le pod pour rien.
+  lifecycle {
+    ignore_changes = [
+      spec[0].template[0].metadata[0].annotations["kubectl.kubernetes.io/restartedAt"],
+    ]
+  }
 }
 
 resource "kubernetes_storage_class" "local_path" {

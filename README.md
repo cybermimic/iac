@@ -34,7 +34,8 @@ cluster réel, où vit le state Terraform, limitations connues.
 
 ## État actuel
 
-Cluster Kubernetes single-node (kubeadm v1.36 + containerd + Calico) sur
+Cluster Kubernetes single-node (kubeadm v1.36 + containerd + Calico, pods
+en `10.244.0.0/16`) sur
 une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 
 | Feature | Statut |
@@ -44,6 +45,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `security/vault` | ✅ Déployé et initialisé — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTPS auto-signé en attendant cert-manager |
+| `networking/lan-dns` (CoreDNS) | ✅ Déployé sur `192.168.1.241` (`*.homelab.lan` → ingress) — configuration des postes en cours ([ADR-007](docs/adr/ADR-007-lan-dns.md)) |
 | `security/cert-manager` (CA interne) | ⏭️ Prochaine étape ([ADR-006](docs/adr/ADR-006-ingress-and-internal-tls.md)) |
 | `delivery/argocd`, `observability/*`, `security/external-secrets`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 
