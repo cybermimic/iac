@@ -1,5 +1,14 @@
 # ADR-007 — DNS du homelab pour les postes du LAN
 
+**Statut : Abandonné (2026-09-28).** Le DNS du LAN distribué par la
+Freebox a été retiré après l'[incident du 2026-09-28](../incidents/2026-09-28-lan-dns-outage.md) :
+la dépendance de tout le LAN au NucBox, acceptée ci-dessous, s'est
+concrétisée (plus de résolution de noms pour aucun appareil). La Freebox
+est revenue à sa configuration d'origine (DNS = Freebox) et la feature
+`networking/lan-dns` a été supprimée. Les services sont désormais
+accessibles par IP (une IP MetalLB par service). Le texte ci-dessous est
+conservé pour l'historique de la décision.
+
 ## Contexte
 
 [ADR-006](ADR-006-ingress-and-internal-tls.md) publie les services derrière

@@ -1,8 +1,9 @@
 # Plan — accueillir inner-riddle sur la plateforme
 
-**Statut : proposition** (2026-10-12). Rien n'est appliqué ; chaque étape
-suit la règle du repo : ADR validée → code → `plan` relu → `apply` par
-l'opérateur.
+**Statut : en cours** (mis à jour le 2026-10-12, après acceptation des
+ADR-009, 010 et 011 et abandon du DNS local). Chaque étape suit la règle
+du repo : code → `plan` relu → `apply` (ou synchronisation ArgoCD) avec
+l'accord de l'opérateur.
 
 inner-riddle ([dépôt privé](https://github.com/cybermimic/inner-riddle)) est
 la première application business. Son dépôt fournit les images, un chart
@@ -10,48 +11,86 @@ Helm (`deploy/chart/`) et son contrat de déploiement (`docs/deployment.md`,
 `docs/mise-en-production.md`). Ce repo fournit la plateforme et déclare
 l'`Application` ArgoCD, sans jamais copier le code ([ADR-002](../adr/ADR-002-gitops-with-argocd.md)).
 
+**Cible : `https://inner-riddle.cybermimic.com`**, joignable depuis
+Internet, certificat Let's Encrypt.
+
+## Décisions qui encadrent le plan
+
+| Sujet | Décision |
+|---|---|
+| DNS local | Abandonné ([ADR-007](../adr/ADR-007-lan-dns.md), [incident](../incidents/2026-09-28-lan-dns-outage.md)) : services internes accessibles **par IP** |
+| Exposition publique | [ADR-009](../adr/ADR-009-public-exposure.md) option D : **un seul Traefik, réservé au public**, sur `192.168.1.240` ; seule IP redirigée par la Freebox |
+| Registre | [ADR-010](../adr/ADR-010-container-registry.md) : Zot sur `https://192.168.1.242` |
+| CI | [ADR-011](../adr/ADR-011-ci-runners.md) : runners ARC **obligatoires** pour les dépôts privés (tous leurs workflows) ; jamais pour `iac` (public) |
+| GitOps | [ADR-008](../adr/ADR-008-gitops-layout.md) : nouvelles features et applications via ArgoCD |
+
+## Plan d'adressage cible
+
+| IP | Usage |
+|---|---|
+| `192.168.1.240` | Traefik **public** (ports 80/443 redirigés depuis Internet) |
+| `192.168.1.241` | libre |
+| `192.168.1.242` | Registre Zot |
+| `192.168.1.243` | Vault |
+| `192.168.1.244` | ArgoCD |
+| `192.168.1.245`-`.250` | services internes futurs |
+
 ## Ce dont l'application a besoin
 
-| Besoin | Fourni par | Statut |
+| Besoin | Fourni par | Étape |
 |---|---|---|
-| Namespace `inner-riddle`, 1 pod backend (~128-256 Mi), 1 pod frontend (~32 Mi) | ArgoCD | — |
+| Namespace `inner-riddle`, 1 pod backend (~128-256 Mi), 1 pod frontend (~32 Mi) | ArgoCD | 7 |
 | Volume `ReadWriteOnce` de 1 Gi (SQLite + sauvegardes), stratégie `Recreate` | `storage/local-path` | ✅ |
-| `https://inner-riddle.cybermimic.com` depuis Internet | `networking/public-ingress` + Let's Encrypt | [ADR-009](../adr/ADR-009-public-exposure.md) proposé |
-| Images `registry.homelab.lan/inner-riddle/{backend,frontend}:X.Y.Z` | `delivery/registry` | [ADR-010](../adr/ADR-010-container-registry.md) proposé |
-| Secret des comptes (hash bcrypt + rôle), pull secret du registre | Vault + `security/external-secrets` | ESO décidé ([ADR-003](../adr/ADR-003-secret-management.md)), pas installé |
-| Publication des images à chaque étiquette | `delivery/actions-runners` | [ADR-011](../adr/ADR-011-ci-runners.md) proposé |
-| Déploiement depuis le dépôt privé | `delivery/argocd` + clé de déploiement | code prêt, pas appliqué ; [ADR-008](../adr/ADR-008-gitops-layout.md) proposé |
+| `https://inner-riddle.cybermimic.com` depuis Internet | Traefik public + Let's Encrypt | 4, 8 |
+| Images `192.168.1.242/inner-riddle/{backend,frontend}:X.Y.Z` | `delivery/registry` | 5 |
+| Secret des comptes, pull secret du registre | Vault + `security/external-secrets` | 3 |
+| Publication des images à chaque étiquette | `delivery/actions-runners` | 6 |
+| Déploiement depuis le dépôt privé | `delivery/argocd` + clé de déploiement | 7 |
 
-Empreinte totale ajoutée (ordre de grandeur) : Traefik public ~100 Mi,
-Zot ~150 Mi, ESO ~200 Mi, ARC ~100 Mi au repos (+1-3 Gi pendant un job),
-ArgoCD ~400 Mi, inner-riddle ~300 Mi. Soit ~1,3 Gi au repos, compatible
-avec les ~13 Go libres.
+Empreinte ajoutée (ordre de grandeur) : Zot ~150 Mi, ESO ~200 Mi (déjà
+installé), ARC ~100 Mi au repos (+1-3 Gi pendant un job), inner-riddle
+~300 Mi. Compatible avec les ~11 Go disponibles.
 
 ## Étapes
 
-Ordre conseillé ; chaque étape est une PR distincte de ce repo, livrée avec
-son README et la mise à jour des tableaux de statut.
+Légende : 🤖 = l'agent (code, `plan`, `apply` après accord) ; 👤 =
+l'opérateur (secrets, comptes externes, réseau, sudo).
 
 ### 1. GitOps — ✅ fait (2026-10-12)
 
-ADR-008 acceptée, `Application` racine appliquée
-(`module.argocd.kubernetes_manifest.root_app`), app-of-apps active sur
+ADR-008 acceptée, `Application` racine appliquée, app-of-apps active sur
 `gitops/apps/`.
 
-### 2. External Secrets — code prêt, attend l'opérateur (2026-10-12)
+### 2. Nettoyage DNS et services internes par IP
 
-- Code : `gitops/apps/external-secrets.yaml` (chart officiel 2.12.0,
-  version épinglée) + `features/security/external-secrets/gitops/clustersecretstore.yaml`
-  (`ClusterSecretStore` `vault`, authentification `kubernetes`, moteur
-  `kv-v2` monté sur `secret/`). Déployé par ArgoCD, pas par Terraform
-  (ADR-008).
-- Opérateur, dans son terminal (le root token ne passe jamais par un agent) :
+- 🤖 Supprimer `networking/lan-dns` (`plan` : 3 destructions, prêt).
+- 🤖 Vault sur `https://192.168.1.243` : listener Vault en TLS (certificat
+  de la CA interne avec l'IP), `Service` `LoadBalancer` ; retrait de son
+  Ingress. Règle au passage la dette « Vault en HTTP dans le cluster ».
+- 🤖 ArgoCD sur `https://192.168.1.244` : TLS par argocd-server lui-même
+  (`server.insecure` retiré), `Service` `LoadBalancer` ; retrait de son
+  Ingress.
+- 🤖 Vérifier qu'un certificat de la CA interne avec une IP est accepté
+  par les navigateurs. La contrainte de nom actuelle ne porte que sur les
+  noms DNS ; si besoin (ou pour durcir), ajouter la plage
+  `192.168.1.240/28` aux noms autorisés de la CA — son certificat change
+  alors (même clé) et doit être réinstallé une fois sur les postes.
+- 👤 Unseal de Vault après son redémarrage (changement de listener).
+
+### 3. External Secrets — code déployé, configuration Vault à faire
+
+Déjà en place : `gitops/apps/external-secrets.yaml` (chart 2.12.0) et
+`ClusterSecretStore` `vault`, en échec tant que Vault n'est pas configuré.
+
+- 👤 Dans son terminal (le token Vault ne passe jamais par un agent), une
+  fois l'étape 2 faite (adapter l'adresse si Vault n'a pas encore bougé) :
 
   ```bash
+  export VAULT_ADDR=https://192.168.1.243
+  vault login   # token admin, saisie masquée
   vault secrets enable -path=secret kv-v2
   vault auth enable kubernetes
   vault write auth/kubernetes/config kubernetes_host=https://kubernetes.default.svc
-  # Une politique en lecture seule par application, par exemple :
   vault policy write inner-riddle - <<'HCL'
   path "secret/data/inner-riddle/*" { capabilities = ["read"] }
   HCL
@@ -61,52 +100,67 @@ ADR-008 acceptée, `Application` racine appliquée
     policies=inner-riddle ttl=1h
   ```
 
-  Le rôle exact (compte de service lié, une politique par application ou
-  un rôle par `SecretStore` de namespace) est tranché dans le README de la
-  feature.
+  Le détail (rôle exact, politiques des autres consommateurs : registre,
+  runners, ArgoCD) est dans `features/security/external-secrets/README.md`.
 
-### 3. Ingress public (après validation de l'ADR-009)
+### 4. Traefik public + Let's Encrypt
 
-- Code : `networking/public-ingress`, ClusterIssuers `letsencrypt-staging`
-  et `letsencrypt` dans `security/cert-manager`, zone de résolution locale
-  facultative dans `networking/lan-dns`.
-- Opérateur : vérifier l'IPv4 publique « full-stack » de la ligne Free ;
-  créer l'enregistrement `A` `inner-riddle.cybermimic.com` ; **ne pas**
-  encore rediriger les ports.
+- 🤖 `networking/ingress` : IngressClass `traefik` non par défaut, liste
+  de namespaces autorisés (`["inner-riddle"]`), provider CRD désactivé,
+  exception ACME à la redirection HTTP → HTTPS, journaux d'accès.
+- 🤖 `security/cert-manager` : ClusterIssuers `letsencrypt-staging` et
+  `letsencrypt` (HTTP-01).
+- 👤 Vérifier que la ligne Free a une **IPv4 publique complète**
+  (« full-stack ») : Freebox OS → État de la Freebox → Internet, la plage
+  de ports doit être `0-65535` ; sinon, la demander dans l'espace abonné
+  Free (Ma Freebox → Paramètres avancés → Demander une adresse IP fixe
+  V4 full-stack).
+- 👤 **DNS chez OVH** (zone `cybermimic.com`, serveurs `ns102.ovh.net`) :
+  créer un enregistrement `A` `inner-riddle` → IPv4 publique de la ligne,
+  TTL 300 au début. Ne touche pas aux autres enregistrements (le site
+  `cybermimic.com` reste où il est). Pas d'enregistrement `CAA` sur le
+  domaine : Let's Encrypt est autorisé.
+- 👤 **Ne pas encore** rediriger les ports.
 
-### 4. Registre (après validation de l'ADR-010)
+### 5. Registre Zot
 
-- Code : `delivery/registry` (Zot) + playbook Ansible qui installe la CA
-  interne dans le magasin de confiance du NucBox et redémarre containerd.
-- Opérateur : produire les deux comptes htpasswd et les ranger dans Vault
-  (`secret/registry/htpasswd`, `secret/registry/pull`, `secret/registry/push`) ;
-  lancer le playbook (`-K`) ; installer la CA sur le poste qui publiera les
-  premières images à la main.
+- 🤖 `delivery/registry` (ArgoCD) : Zot, `https://192.168.1.242`, TLS par
+  Zot (certificat CA interne avec l'IP), 20 Gi `local-path`, rétention ;
+  htpasswd et pull secret via External Secrets ; playbook Ansible qui
+  installe la CA dans le magasin de confiance du NucBox et redémarre
+  containerd.
+- 👤 Produire les deux comptes htpasswd (écriture CI, lecture cluster) et
+  les ranger dans Vault (`secret/registry/htpasswd`, `secret/registry/pull`,
+  `secret/registry/push`) ; lancer le playbook (`-K`, `-c local` depuis le
+  NucBox) ; installer la CA sur le poste qui testera un premier `docker
+  push`.
 
-### 5. Runners (après validation de l'ADR-011)
+### 6. Runners ARC
 
-- Code : `delivery/actions-runners` (contrôleur ARC + scale set
-  `inner-riddle`, libellé `homelab`).
-- Opérateur : créer la GitHub App de l'organisation, ranger son
-  identifiant et sa clé privée dans Vault ; dans le dépôt inner-riddle,
-  variable `RELEASE_RUNNER` (libellé du scale set) et secrets
-  `REGISTRY_USER` / `REGISTRY_PASSWORD` (compte d'écriture du registre).
-  Le workflow `Release` d'inner-riddle publie alors à chaque étiquette
-  `vX.Y.Z` ; en attendant, `tools/release/publish.sh X.Y.Z` depuis un poste
-  du LAN.
+- 🤖 `delivery/actions-runners` (ArgoCD) : contrôleur ARC + scale set
+  `inner-riddle`, libellé `homelab`, DinD, `minRunners: 0`,
+  `maxRunners: 1`, CA interne approuvée par le Docker du runner.
+- 👤 Créer la **GitHub App** de l'organisation `cybermimic` (droits
+  minimaux pour les runners), l'installer sur `inner-riddle` uniquement,
+  ranger son identifiant, son ID d'installation et sa clé privée dans
+  Vault (`secret/actions-runners/github-app`).
+- 👤 Dans le dépôt inner-riddle : `runs-on: homelab` pour tous les jobs ;
+  variable `REGISTRY` = `192.168.1.242` ; secrets `REGISTRY_USER` /
+  `REGISTRY_PASSWORD` (compte d'écriture). Le workflow `Release` publie
+  alors à chaque étiquette `vX.Y.Z`.
 
-### 6. Application inner-riddle
+### 7. Application inner-riddle
 
-- Opérateur : générer une clé de déploiement SSH **en lecture seule** pour
-  le dépôt inner-riddle (GitHub → Settings → Deploy keys), ranger la clé
-  privée dans Vault (`secret/argocd/repo-inner-riddle`) ; ranger les
-  comptes de l'application dans `secret/inner-riddle/auth`, propriétés
-  `accounts` (une ligne `identifiant:rôle:hash-bcrypt` par compte) et
-  `session_secret`. Les deux valeurs se génèrent avec l'image du backend :
+- 👤 Générer une **clé de déploiement SSH en lecture seule** pour le dépôt
+  inner-riddle (GitHub → Settings → Deploy keys), ranger la clé privée dans
+  Vault (`secret/argocd/repo-inner-riddle`) ; ranger les comptes de
+  l'application dans `secret/inner-riddle/auth`, propriétés `accounts`
+  (une ligne `identifiant:rôle:hash-bcrypt` par compte) et
+  `session_secret`, générées avec l'image du backend :
   `inner-riddle hash-password` (saisie sans écho) et
-  `inner-riddle new-session-secret` — voir le `docs/deployment.md`
+  `inner-riddle new-session-secret` — voir `docs/deployment.md`
   d'inner-riddle.
-- Code : `ExternalSecret` du dépôt pour ArgoCD (label
+- 🤖 `ExternalSecret` du dépôt pour ArgoCD (label
   `argocd.argoproj.io/secret-type: repository`), puis
   `gitops/apps/inner-riddle.yaml`, esquisse :
 
@@ -125,9 +179,11 @@ ADR-008 acceptée, `Application` racine appliquée
       helm:
         valuesObject:
           host: inner-riddle.cybermimic.com
+          image:
+            registry: 192.168.1.242
           ingress:
-            className: traefik-public
-            clusterIssuer: letsencrypt
+            className: traefik
+            clusterIssuer: letsencrypt-staging   # puis letsencrypt (étape 8)
           imagePullSecrets: [{name: registry-pull}]
           persistence:
             storageClass: local-path
@@ -136,7 +192,7 @@ ADR-008 acceptée, `Application` racine appliquée
             secretStoreRef: {name: vault, kind: ClusterSecretStore}
             remoteKey: inner-riddle/auth   # propriétés « accounts » et « session_secret »
           networkPolicy:
-            ingressNamespaces: [traefik-public]
+            ingressNamespaces: [traefik]
     destination:
       server: https://kubernetes.default.svc
       namespace: inner-riddle
@@ -145,27 +201,32 @@ ADR-008 acceptée, `Application` racine appliquée
       # Synchronisation manuelle : application business (ADR-002, ADR-008).
   ```
 
-  Valeurs complètes : `deploy/chart/README.md` d'inner-riddle (chart
-  vérifié par `helm lint` + `kubeconform` en CI, et installé sur un k3s 1.36
-  en namespace `restricted`). Le namespace peut porter
+  Noms exacts des valeurs : `deploy/chart/README.md` d'inner-riddle (à
+  relire au moment d'écrire le fichier). Le namespace peut porter
   `pod-security.kubernetes.io/enforce: restricted`. HSTS est posé par
   l'application : aucun middleware Traefik n'est requis.
 
-### 7. Mise en ligne
+### 8. Mise en ligne
 
 Suivie par le ticket IR-043 d'inner-riddle :
 
-1. synchroniser l'`Application`, vérifier depuis le LAN (résolution locale
-   vers `.241`) ;
-2. rediriger les ports 80/443 de la Freebox vers `.241`, émettre d'abord
-   avec `letsencrypt-staging`, puis `letsencrypt` ;
-3. depuis l'extérieur (réseau mobile) : application accessible, noms
-   `*.homelab.lan` injoignables via l'IP publique.
+1. 🤖/👤 synchroniser l'`Application` ; vérifier depuis le LAN avec
+   `curl --resolve inner-riddle.cybermimic.com:443:192.168.1.240` ;
+2. 👤 rediriger les ports **80 et 443** de la Freebox vers
+   **`192.168.1.240`** uniquement (Freebox OS → Paramètres → Gestion des
+   ports) ;
+3. 🤖 certificat `letsencrypt-staging` émis → passer à `letsencrypt` ;
+4. 👤 depuis l'extérieur (réseau mobile) : application accessible en
+   HTTPS valide ; l'IP publique ne sert rien d'autre (essayer
+   `curl -k --resolve vault.homelab.lan:443:<IP publique>` → `404`) ;
+5. 👤 depuis le LAN : vérifier que `https://inner-riddle.cybermimic.com`
+   répond (NAT en épingle de la Freebox) ; sinon entrée `hosts` vers
+   `192.168.1.240`.
 
 ## Mises à jour de documentation attendues
 
 Avec chaque étape : README de la feature, tableau d'état du README racine,
-`docs/architecture.md`, `docs/platform-overview.md` (plan d'adressage :
-`192.168.1.241` → ingress public ; chemin d'une requête publique), ligne
-« Stack » de `CLAUDE.md`, dette dans `docs/operations.md` (sauvegardes sur
-le même disque, IP du domicile publiée).
+`docs/architecture.md`, `docs/platform-overview.md` (plan d'adressage,
+chemin d'une requête publique), ligne « Stack » de `CLAUDE.md`, dette dans
+`docs/operations.md` (sauvegardes sur le même disque, IP du domicile
+publiée dans le DNS).

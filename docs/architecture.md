@@ -63,7 +63,7 @@ single-node.
 | `delivery/argocd` | ✅ Déployé, app-of-apps active ([ADR-008](adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ⏳ Déclaré dans `gitops/apps/`, attend la config Vault opérateur |
 | `observability/*`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
-| Exposition publique, registre, runners CI | 📋 Proposé ([ADR-009](adr/ADR-009-public-exposure.md)/[010](adr/ADR-010-container-registry.md)/[011](adr/ADR-011-ci-runners.md)) |
+| Exposition publique, registre, runners CI | 📋 Décidé, à implémenter ([ADR-009](adr/ADR-009-public-exposure.md)/[010](adr/ADR-010-container-registry.md)/[011](adr/ADR-011-ci-runners.md)) |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |
 
 Détail par feature : `features/*/README.md`. Limitations connues et faits

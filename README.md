@@ -50,7 +50,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `delivery/argocd` | ✅ Déployé (`https://argocd.homelab.lan`), Application racine app-of-apps active ([ADR-008](docs/adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ⏳ Déclaré dans `gitops/apps/` (ArgoCD), ClusterSecretStore en attente de la config Vault opérateur — voir [docs/plans/inner-riddle.md](docs/plans/inner-riddle.md) |
 | `observability/*`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
-| Exposition publique (`networking/public-ingress`), registre (`delivery/registry`), runners CI (`delivery/actions-runners`) | 📋 Proposé — [ADR-009](docs/adr/ADR-009-public-exposure.md), [ADR-010](docs/adr/ADR-010-container-registry.md), [ADR-011](docs/adr/ADR-011-ci-runners.md), en attente de validation |
+| Exposition publique (Traefik → public), registre (`delivery/registry`), runners CI (`delivery/actions-runners`) | 📋 Décidé, à implémenter — [ADR-009](docs/adr/ADR-009-public-exposure.md), [ADR-010](docs/adr/ADR-010-container-registry.md), [ADR-011](docs/adr/ADR-011-ci-runners.md) ; ordre et actions : [plan inner-riddle](docs/plans/inner-riddle.md) |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)
 pour le détail des décisions déjà prises, et

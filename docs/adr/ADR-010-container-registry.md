@@ -1,7 +1,6 @@
 # ADR-010 — Registre d'images
 
-**Statut : Proposé** (2026-10-12) — à valider par l'opérateur avant toute
-implémentation.
+**Statut : Acceptée** (2026-10-12) — Zot, publié par IP (voir « Décision »).
 
 ## Contexte
 
@@ -51,7 +50,7 @@ Confiance dans la CA interne :
 ## Conséquences
 
 - Dépend de `security/external-secrets` (htpasswd et pull secret), de
-  `networking/ingress` et de `security/cert-manager`.
+  `networking/metallb` (IP `192.168.1.242`) et de `security/cert-manager`.
 - Le registre n'est joignable que depuis le LAN : la CI GitHub hébergée ne
   peut pas y publier. Publication automatique = runners dans le cluster
   ([ADR-011](ADR-011-ci-runners.md)) ; en attendant, publication manuelle
@@ -62,4 +61,21 @@ Confiance dans la CA interne :
 
 ## Décision
 
-*À compléter après validation.*
+**Zot**, accepté le 2026-10-12, avec un changement par rapport à la
+proposition : sans DNS local ([ADR-007](ADR-007-lan-dns.md) abandonné) et
+avec Traefik réservé au public ([ADR-009](ADR-009-public-exposure.md)), le
+registre **n'a pas d'Ingress** :
+
+- publié sur **`https://192.168.1.242`** par un `Service` `LoadBalancer`
+  (MetalLB), Zot terminant lui-même le TLS avec un certificat de la CA
+  interne contenant l'IP ; jamais redirigé par la Freebox, donc jamais
+  public ;
+- les références d'images deviennent
+  `192.168.1.242/inner-riddle/{backend,frontend}:X.Y.Z` ;
+- containerd (NucBox) et Docker (runners, postes) font confiance à la CA
+  interne pour cette adresse (playbook Ansible pour le NucBox, comme
+  prévu) ;
+- le reste est inchangé : `local-path` 20 Gi, rétention + ramasse-miettes,
+  htpasswd (compte d'écriture pour la CI, de lecture pour le cluster) et
+  pull secret fournis par Vault + External Secrets ; feature
+  `delivery/registry` livrée par ArgoCD ([ADR-008](ADR-008-gitops-layout.md)).

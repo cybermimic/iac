@@ -1,5 +1,12 @@
 # ADR-006 — Ingress (Traefik) et TLS interne (CA cert-manager)
 
+**Mise à jour 2026-10-12 :** partiellement remplacée. Sans DNS local
+([ADR-007](ADR-007-lan-dns.md), abandonné), Traefik devient l'ingress
+**public** et les services internes quittent Traefik pour une IP MetalLB
+chacun, avec leur propre certificat de la CA interne
+([ADR-009](ADR-009-public-exposure.md)). La CA interne (cert-manager)
+reste valable ; les noms `*.homelab.lan` ne sont plus utilisés.
+
 ## Contexte
 
 Les services de plateforme (Vault, puis ArgoCD, monitoring…) doivent être

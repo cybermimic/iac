@@ -1,13 +1,12 @@
 # ADR-011 — Runners GitHub Actions dans le cluster
 
-**Statut : Proposé** (2026-10-12) — à valider par l'opérateur avant toute
-implémentation.
+**Statut : Acceptée** (2026-10-12) — option A, dépôts privés uniquement.
 
 ## Contexte
 
 Les dépôts de l'organisation utilisent GitHub Actions. Les vérifications
 (lint, tests) tournent sur les runners hébergés par GitHub, mais la
-**publication des images** vers `registry.homelab.lan`
+**publication des images** vers le registre interne
 ([ADR-010](ADR-010-container-registry.md)) exige un runner dans le LAN. La
 CI d'inner-riddle exécute chaque étape via Docker Compose : le runner doit
 fournir Docker.
@@ -47,4 +46,18 @@ Option C en transition, tant que A n'est pas en place.
 
 ## Décision
 
-*À compléter après validation.*
+**Option A (ARC, runner scale set DinD)**, acceptée le 2026-10-12, avec
+deux précisions de l'opérateur :
+
+- **obligatoire pour les dépôts privés** de l'organisation (d'abord
+  `cybermimic/inner-riddle`) : leurs workflows GitHub Actions tournent sur
+  les runners du homelab (libellé `homelab`), publication et déploiement
+  compris — plus seulement les jobs qui ont besoin du LAN ;
+- **jamais pour un dépôt public** : la CI de `cybermimic/iac` (public)
+  reste sur les runners hébergés par GitHub. Une PR venant d'un fork
+  exécuterait sinon du code arbitraire sur le NucBox. Si `iac` passe un
+  jour en privé, la question pourra être rouverte.
+
+`maxRunners: 1` (contrainte mémoire) : les jobs d'un même dépôt
+s'exécutent les uns après les autres. Pas d'option C en transition :
+inner-riddle n'est mis en ligne qu'une fois les runners en place.
