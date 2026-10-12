@@ -49,7 +49,8 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
 | `delivery/argocd` | ✅ Déployé sur `https://192.168.1.244`, Application racine app-of-apps active ([ADR-008](docs/adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ✅ Déployé par ArgoCD, `ClusterSecretStore` `vault` valide (Vault en TLS sur `192.168.1.243`) |
-| `observability/*`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
+| `delivery/registry` (Zot) | ⏳ Livré par ArgoCD sur `https://192.168.1.242` — attend les comptes dans Vault et le playbook CA du nœud |
+| `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | Exposition publique (Traefik → public), registre (`delivery/registry`), runners CI (`delivery/actions-runners`) | 📋 Décidé, à implémenter — [ADR-009](docs/adr/ADR-009-public-exposure.md), [ADR-010](docs/adr/ADR-010-container-registry.md), [ADR-011](docs/adr/ADR-011-ci-runners.md) ; ordre et actions : [plan inner-riddle](docs/plans/inner-riddle.md) |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)

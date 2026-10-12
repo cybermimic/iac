@@ -222,13 +222,14 @@ jetons acceptés à ceux émis pour Vault.
   domaine : Let's Encrypt est autorisé.
 - 👤 **Ne pas encore** rediriger les ports.
 
-### 5. Registre Zot
+### 5. Registre Zot — code livré (2026-10-13)
 
-- 🤖 `delivery/registry` (ArgoCD) : Zot, `https://192.168.1.242`, TLS par
-  Zot (certificat CA interne avec l'IP), 20 Gi `local-path`, rétention ;
-  htpasswd et pull secret via External Secrets ; playbook Ansible qui
-  installe la CA dans le magasin de confiance du NucBox et redémarre
-  containerd.
+- ✅ `delivery/registry` (ArgoCD) : Zot v2.1.22, `https://192.168.1.242`,
+  TLS par Zot (certificat CA interne, IP), 20 Gi `local-path`, rétention
+  10 versions ; htpasswd via External Secrets ; configuration validée par
+  `zot verify`. Playbook Ansible `features/delivery/registry/ansible/`
+  (CA dans le magasin de confiance du NucBox + redémarrage de containerd).
+  Le pull secret de l'application est livré avec elle (étape 7).
 - 👤 Produire les deux comptes htpasswd (écriture CI, lecture cluster) et
   les ranger dans Vault (`secret/registry/htpasswd`, `secret/registry/pull`,
   `secret/registry/push`) ; lancer le playbook (`-K`, `-c local` depuis le

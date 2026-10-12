@@ -1,0 +1,14 @@
+# Certificat TLS de Zot, signé par la CA interne. Uniquement l'IP : la CA ne
+# peut signer que des noms DNS sous homelab.lan (name constraint).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zot-tls
+spec:
+  secretName: zot-tls
+  ipAddresses:
+    - 192.168.1.242
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: homelab-ca

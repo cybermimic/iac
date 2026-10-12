@@ -1,0 +1,37 @@
+---
+# Le registre (https://192.168.1.242) présente un certificat de la CA
+# interne « Homelab Root CA ». Pour que containerd télécharge les images
+# des applications, le nœud doit faire confiance à cette CA : on l'installe
+# dans le magasin de confiance du système, puis on redémarre containerd
+# pour qu'il le relise. Les conteneurs en cours ne sont pas interrompus
+# (ils tournent sous leur propre shim).
+#
+# Configuration d'hôte, donc Ansible et pas Terraform (ADR-001). Voir
+# features/delivery/registry/README.md.
+- name: Trust the homelab CA on Kubernetes nodes (registry pulls)
+  hosts: k8s_nodes
+  become: true
+  vars:
+    homelab_ca_source: "{{ playbook_dir }}/../../../../docs/homelab-root-ca.crt"
+  tasks:
+    - name: Install the homelab CA in the system trust store
+      ansible.builtin.copy:
+        src: "{{ homelab_ca_source }}"
+        dest: /usr/local/share/ca-certificates/homelab-root-ca.crt
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Update CA certificates
+        - Restart containerd
+
+  handlers:
+    - name: Update CA certificates
+      ansible.builtin.command:
+        cmd: update-ca-certificates
+      changed_when: true
+
+    - name: Restart containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted

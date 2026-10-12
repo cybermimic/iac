@@ -1,0 +1,101 @@
+# Registre d'images Zot (ADR-010), livré par ArgoCD (ADR-008).
+# https://192.168.1.242 — jamais public (IP non redirigée par la Freebox).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: registry
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Chart officiel Zot.
+    - repoURL: https://zotregistry.dev/helm-charts
+      chart: zot
+      targetRevision: 0.1.128 # Zot v2.1.22 — jamais latest, voir CLAUDE.md
+      helm:
+        valuesObject:
+          # StatefulSet + volume local-path (images sur le disque du NucBox).
+          persistence: true
+          pvc:
+            create: true
+            storage: 20Gi
+            storageClassName: local-path
+          service:
+            type: LoadBalancer
+            port: 443 # https://192.168.1.242, vers le port 5000 du conteneur
+            annotations:
+              metallb.io/loadBalancerIPs: 192.168.1.242
+          # Zot termine lui-même le TLS : sondes en HTTPS.
+          httpGet:
+            scheme: HTTPS
+            port: 5000
+          # Secrets créés par features/delivery/registry/gitops/ :
+          # certificat (cert-manager) et htpasswd (External Secrets).
+          externalSecrets:
+            - secretName: zot-tls
+              mountPath: /tls
+            - secretName: zot-htpasswd
+              mountPath: /htpasswd
+          mountConfig: true
+          # Configuration validée par `zot verify` (v2.1.22). Comptes :
+          # ci-push (CI, écriture) et cluster-pull (cluster, lecture).
+          # Rétention : 10 dernières versions par dépôt, nettoyage quotidien.
+          configFiles:
+            config.json: |-
+              {
+                "storage": {
+                  "rootDirectory": "/var/lib/registry",
+                  "gc": true,
+                  "gcDelay": "1h",
+                  "gcInterval": "24h",
+                  "retention": {
+                    "dryRun": false,
+                    "delay": "24h",
+                    "policies": [
+                      {
+                        "repositories": ["**"],
+                        "deleteReferrers": true,
+                        "deleteUntagged": true,
+                        "keepTags": [{ "mostRecentlyPushedCount": 10 }]
+                      }
+                    ]
+                  }
+                },
+                "http": {
+                  "address": "0.0.0.0",
+                  "port": "5000",
+                  "tls": { "cert": "/tls/tls.crt", "key": "/tls/tls.key" },
+                  "auth": { "htpasswd": { "path": "/htpasswd/htpasswd" } },
+                  "accessControl": {
+                    "repositories": {
+                      "**": {
+                        "policies": [
+                          { "users": ["ci-push"], "actions": ["read", "create", "update", "delete"] },
+                          { "users": ["cluster-pull"], "actions": ["read"] }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "log": { "level": "info" }
+              }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+    # Certificat et htpasswd propres à ce homelab.
+    - repoURL: https://github.com/cybermimic/iac.git
+      targetRevision: main
+      path: features/delivery/registry/gitops
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: registry
+  syncPolicy:
+    automated:
+      selfHeal: true
+      # Pas de prune (ADR-008).
+    syncOptions:
+      - CreateNamespace=true
