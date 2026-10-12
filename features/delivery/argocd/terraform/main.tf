@@ -81,3 +81,49 @@ resource "helm_release" "argocd" {
     })
   ]
 }
+
+# App-of-apps (ADR-008) : seule Application créée par Terraform. Elle suit
+# gitops/apps/ de ce repo — chaque fichier de ce dossier est une Application
+# à part (une feature ou une app business), ajoutée/retirée par une PR sur
+# ce repo, sans nouveau `terraform apply`.
+resource "kubernetes_manifest" "root_app" {
+  depends_on = [helm_release.argocd]
+
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+
+    metadata = {
+      name      = "root"
+      namespace = kubernetes_namespace.argocd.metadata[0].name
+    }
+
+    spec = {
+      project = "default"
+
+      source = {
+        repoURL        = var.root_app_repo_url
+        targetRevision = var.root_app_repo_revision
+        path           = var.root_app_path
+
+        directory = {
+          recurse = true
+        }
+      }
+
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = kubernetes_namespace.argocd.metadata[0].name
+      }
+
+      syncPolicy = {
+        automated = {
+          selfHeal = true
+          # Pas de prune (ADR-008) : retirer un fichier de gitops/apps/ ne
+          # supprime pas l'Application correspondante tant qu'on n'a pas
+          # confiance, feature par feature.
+        }
+      }
+    }
+  }
+}

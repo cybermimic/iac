@@ -6,11 +6,11 @@ ArgoCD, moteur GitOps de la plateforme ([ADR-002](../../../docs/adr/ADR-002-gito
 à terme, source de vérité des workloads (features de plateforme et
 applications business référencées depuis leurs propres repos).
 
-**Cette première version installe ArgoCD seul, sans aucune
-`Application`.** La structure GitOps (quel repo/chemin ArgoCD suit, « app
-of apps » ou `ApplicationSet`, quelles features basculent de Terraform
-vers ArgoCD) est une décision à prendre à part : proposition dans
-[ADR-008](../../../docs/adr/ADR-008-gitops-layout.md) (statut « Proposé »).
+En plus d'ArgoCD lui-même, ce module crée l'**Application racine**
+(app-of-apps, [ADR-008](../../../docs/adr/ADR-008-gitops-layout.md),
+statut « Acceptée ») qui suit `gitops/apps/` de ce repo. Toute nouvelle
+Application (feature ou app business) s'ajoute par un fichier dans ce
+dossier, sans nouveau `terraform apply`.
 
 ## Accès
 
@@ -58,6 +58,9 @@ est un cache).
 | `ingress_class_name` | IngressClass | — (requis, output de `networking/ingress`) |
 | `cluster_issuer_name` | ClusterIssuer du certificat | — (requis, output de `security/cert-manager`) |
 | `tolerate_control_plane_taint` | Toleration control-plane pour tous les pods (single-node) | `true` |
+| `root_app_repo_url` | Repo suivi par l'Application racine | `https://github.com/cybermimic/iac.git` |
+| `root_app_repo_revision` | Branche/tag suivi | `main` |
+| `root_app_path` | Chemin des manifestes Application | `gitops/apps` |
 
 ## Outputs
 
@@ -73,6 +76,7 @@ Vérification :
 ```bash
 kubectl -n argocd get pods                          # tous Running
 kubectl -n argocd get ingress,certificate           # certificat READY True
+kubectl -n argocd get application root              # Synced, Healthy
 ```
 
 puis, depuis un poste du LAN où la CA est installée :

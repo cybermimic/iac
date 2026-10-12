@@ -1,7 +1,6 @@
 # ADR-008 — Organisation GitOps (ArgoCD)
 
-**Statut : Proposé** (2026-09-27) — à valider par l'opérateur avant toute
-implémentation. Rien de ce qui suit n'est encore en place.
+**Statut : Acceptée** (2026-10-12).
 
 ## Contexte
 
@@ -84,4 +83,17 @@ repos business privés demanderont des identifiants (clé de déploiement),
 
 ## Décision
 
-*À compléter après validation.*
+Les trois options recommandées sont retenues telles que décrites :
+
+1. App of apps — une `Application` racine (Terraform, dans
+   `features/delivery/argocd/terraform/`) qui suit `gitops/apps/` de ce
+   repo (`directory.recurse = true`).
+2. Socle Terraform (MetalLB, local-path, Traefik, lan-dns, cert-manager,
+   Vault, ArgoCD + l'Application racine) / reste en ArgoCD (toute nouvelle
+   feature, applications business).
+3. Synchronisation automatique + `selfHeal`, sans `prune`, pour les
+   features de plateforme déployées via ArgoCD ; synchronisation manuelle
+   pour les applications business.
+
+Première feature livrée par ce chemin : `security/external-secrets`
+(voir [docs/plans/inner-riddle.md](../plans/inner-riddle.md)).

@@ -25,6 +25,24 @@ variable "cluster_issuer_name" {
   type        = string
 }
 
+variable "root_app_repo_url" {
+  description = "Repo Git suivi par l'Application racine (app-of-apps, voir ADR-008)"
+  type        = string
+  default     = "https://github.com/cybermimic/iac.git"
+}
+
+variable "root_app_repo_revision" {
+  description = "Branche/tag suivi par l'Application racine"
+  type        = string
+  default     = "main"
+}
+
+variable "root_app_path" {
+  description = "Chemin dans le repo contenant les manifestes Application (une par feature/app)"
+  type        = string
+  default     = "gitops/apps"
+}
+
 variable "tolerate_control_plane_taint" {
   description = <<-EOT
     Ajoute une toleration control-plane à tous les pods ArgoCD

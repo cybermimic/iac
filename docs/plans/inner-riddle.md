@@ -32,17 +32,19 @@ avec les ~13 Go libres.
 Ordre conseillé ; chaque étape est une PR distincte de ce repo, livrée avec
 son README et la mise à jour des tableaux de statut.
 
-### 1. GitOps
+### 1. GitOps — ✅ fait (2026-10-12)
 
-- Opérateur : valider l'ADR-008 (ou l'amender), puis `plan` / `apply` de
-  `delivery/argocd`.
-- Code : `Application` racine (Terraform) qui suit `gitops/apps/`.
+ADR-008 acceptée, `Application` racine appliquée
+(`module.argocd.kubernetes_manifest.root_app`), app-of-apps active sur
+`gitops/apps/`.
 
-### 2. External Secrets
+### 2. External Secrets — code prêt, attend l'opérateur (2026-10-12)
 
-- Code : feature `security/external-secrets` (chart officiel, version
-  épinglée), `ClusterSecretStore` `vault` (méthode d'authentification
-  `kubernetes`, moteur `kv-v2` monté sur `secret/`).
+- Code : `gitops/apps/external-secrets.yaml` (chart officiel 2.12.0,
+  version épinglée) + `features/security/external-secrets/gitops/clustersecretstore.yaml`
+  (`ClusterSecretStore` `vault`, authentification `kubernetes`, moteur
+  `kv-v2` monté sur `secret/`). Déployé par ArgoCD, pas par Terraform
+  (ADR-008).
 - Opérateur, dans son terminal (le root token ne passe jamais par un agent) :
 
   ```bash
