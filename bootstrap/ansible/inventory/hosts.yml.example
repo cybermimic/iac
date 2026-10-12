@@ -5,6 +5,12 @@
 # Inventaire unique du parc, utilisé par bootstrap/ansible et par les
 # playbooks des features (features/*/ansible).
 all:
+  vars:
+    # Ubuntu >= 25.10 : `sudo` est sudo-rs, qui reformate l'invite de mot de
+    # passe (« [sudo: …] Mot de passe : ») ; Ansible ne la reconnaît pas et
+    # échoue sur « Timed out waiting for become … password prompt ». Le sudo
+    # classique reste installé sous le nom sudo.ws : l'utiliser.
+    ansible_become_exe: sudo.ws
   children:
     k8s_nodes:
       hosts:

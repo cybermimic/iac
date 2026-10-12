@@ -69,7 +69,9 @@ ansible-playbook -i ../../../../bootstrap/ansible/inventory/hosts.yml playbook.y
 ansible-playbook -i ../../../../bootstrap/ansible/inventory/hosts.yml playbook.yml -c local -K
 ```
 
-(`-c local` depuis le NucBox lui-même ; `-K` = mot de passe sudo.)
+(`-c local` depuis le NucBox lui-même ; `-K` = mot de passe sudo. Erreur
+« Timed out waiting for become … password prompt » → sudo-rs : voir
+`bootstrap/README.md`, section sudo-rs.)
 Postes qui poussent des images à la main : scripts
 `security/cert-manager/clients`, puis redémarrer Docker.
 

@@ -55,6 +55,15 @@ ansible-playbook playbook.yml -K                     # exécution réelle
 `-K` (`--ask-become-pass`) est nécessaire : aucune machine du parc n'a de
 sudo sans mot de passe configuré actuellement.
 
+### sudo-rs (Ubuntu ≥ 25.10)
+
+`sudo` y est **sudo-rs**, dont l'invite de mot de passe n'est pas reconnue
+par Ansible (`Timed out waiting for become success or become password
+prompt`). L'inventaire d'exemple fixe `ansible_become_exe: sudo.ws` (le
+sudo classique, toujours installé). Pour un `hosts.yml` créé avant ce
+réglage : l'ajouter sous `all.vars`, ou passer `-e
+ansible_become_exe=sudo.ws` en ligne de commande.
+
 ## Upgrade
 
 Monter `kubernetes_node_series` (ex. `1.36` → `1.37`) est un changement de
