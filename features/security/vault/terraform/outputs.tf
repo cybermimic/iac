@@ -3,8 +3,8 @@ output "namespace" {
 }
 
 output "url" {
-  description = "URL de Vault sur le LAN (null si non publié)"
-  value       = var.ingress_host == null ? null : "https://${var.ingress_host}"
+  description = "URL de Vault sur le LAN (UI sous /ui/)"
+  value       = "https://${var.load_balancer_ip}:8200"
 }
 
 output "release_name" {

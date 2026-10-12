@@ -10,24 +10,32 @@ single-node. Voir [ADR-003](../../../docs/adr/ADR-003-secret-management.md).
 
 ## Accès
 
-**`https://vault.homelab.lan`** (UI sous `/ui/`, API sous `/v1/`), depuis
-tout le LAN. Publié par un `Ingress` (Traefik) avec un certificat de la CA
-interne (`vault-tls`, renouvelé automatiquement par cert-manager). Le TLS
-est terminé par Traefik ; entre Traefik et le pod, le trafic reste en HTTP
-dans le cluster (listener `tls_disable = 1`). Toute action demande une
-authentification Vault.
+**`https://192.168.1.243:8200`** (UI sous `/ui/`, API sous `/v1/`), depuis
+tout le LAN ([ADR-009](../../../docs/adr/ADR-009-public-exposure.md) :
+une IP par service interne, jamais redirigée par la Freebox). `Service`
+`LoadBalancer` (MetalLB) ; **TLS de bout en bout** : c'est Vault lui-même
+qui présente le certificat (listener HTTPS), signé par la CA interne
+(secret `vault-listener-tls`, renouvelé par cert-manager). Toute action
+demande une authentification Vault.
 
-Depuis le NucBox sans passer par le LAN :
-`kubectl -n vault port-forward svc/vault 8200:8200`.
+Le certificat ne contient que des **IP** (`192.168.1.243`, `127.0.0.1`) :
+la CA interne ne peut signer que des noms DNS sous `homelab.lan`, un nom
+de Service Kubernetes (`vault.vault.svc`) rendrait le certificat invalide.
+Les clients du cluster (External Secrets) joignent donc Vault par son IP.
+
+CLI : `vault` n'est pas installé sur le NucBox ; utiliser celle du pod, déjà
+configurée (`VAULT_ADDR=https://127.0.0.1:8200`, `VAULT_CACERT` = CA
+interne) : `kubectl -n vault exec -it vault-0 -- vault <commande>`, ou un
+shell `kubectl -n vault exec -it vault-0 -- sh`.
 
 ## Dépendances
 
 - `storage/local-path` — la StorageClass doit exister avant Vault (volume
   de données persistant).
-- `networking/ingress` et `security/cert-manager` — pour la publication
-  HTTPS (inputs `ingress_class_name` et `cluster_issuer_name`, passés
-  depuis leurs outputs). Optionnelle : sans `ingress_host`, rien n'est
-  publié.
+- `networking/metallb` — IP `load_balancer_ip` (`depends_on` commenté
+  dans `infrastructure/environments/homelab/main.tf`).
+- `security/cert-manager` — certificat du listener (input
+  `cluster_issuer_name`, passé depuis son output).
 
 ## Ressources approximatives
 
@@ -168,6 +176,10 @@ pas affecté par un rollback du chart seul.
 - Avertissement de certificat dans le navigateur → la CA du homelab n'est
   pas installée sur ce poste (voir `security/cert-manager`, « Installer la
   CA sur les postes »).
-- `https://vault.homelab.lan` injoignable → vérifier dans l'ordre : DNS
-  (`nslookup vault.homelab.lan`), Ingress (`kubectl -n vault get
-  ingress,certificate`), pod Vault Ready (scellé = `503`).
+- `https://192.168.1.243:8200` injoignable → `kubectl -n vault get
+  svc vault` (EXTERNAL-IP attribuée ?), événement MetalLB `nodeAssigned`,
+  pod Vault `Running`. Scellé = l'API répond mais `sys/health` renvoie
+  `503`.
+- Changement de configuration (listener, certificat…) sans effet → le
+  StatefulSet est en `updateStrategy: OnDelete` : supprimer le pod
+  (`kubectl -n vault delete pod vault-0`) pour l'appliquer, puis unseal.

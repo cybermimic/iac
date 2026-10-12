@@ -42,7 +42,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 |---|---|
 | `networking/metallb` | ✅ Déployé — IP joignables depuis le LAN depuis le 2026-09-27 (annonce L2 corrigée) |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
-| `security/vault` | ✅ Déployé, initialisé, publié sur `https://vault.homelab.lan` — unseal manuel après chaque redémarrage |
+| `security/vault` | ✅ Déployé, initialisé, sur `https://192.168.1.243:8200` (TLS de bout en bout, CA interne) — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTP → HTTPS, certificats par cert-manager |
 | `networking/lan-dns` (CoreDNS) | 🗑️ Supprimé le 2026-10-12 ([ADR-007](docs/adr/ADR-007-lan-dns.md) abandonné, [incident](docs/incidents/2026-09-28-lan-dns-outage.md)) |

@@ -8,9 +8,10 @@
 # keys à transiter par un state ou des logs, exactement ce que ce repo
 # interdit.
 #
-# TLS interne désactivé pour cette première version : trafic ClusterIP
-# uniquement, pas d'exposition hors cluster tant qu'ingress+cert-manager
-# n'existent pas. À durcir plus tard (voir README, section Troubleshooting).
+# Publication (ADR-009) : Vault a sa propre IP LAN (Service LoadBalancer,
+# MetalLB) et termine lui-même le TLS (listener en HTTPS) avec un
+# certificat de la CA interne. Pas d'Ingress : Traefik est réservé au
+# public, et cette IP n'est jamais redirigée par la Freebox.
 
 locals {
   # Le chart hashicorp/vault attend une chaîne YAML brute ici (insérée
@@ -22,11 +23,49 @@ locals {
       operator: Exists
       effect: NoSchedule
   EOT
+
+  tls_secret_name = "vault-listener-tls"
+  # Le chart monte extraVolumes de type secret sous /vault/userconfig/<nom>/.
+  tls_dir = "/vault/userconfig/${local.tls_secret_name}"
 }
 
 resource "kubernetes_namespace" "vault" {
   metadata {
     name = var.namespace
+  }
+}
+
+# Certificat du listener Vault, signé par la CA interne. Uniquement des IP :
+# la CA ne peut signer que des noms DNS sous homelab.lan (name constraint),
+# un nom interne Kubernetes (vault.vault.svc) rendrait le certificat
+# invalide pour tout client qui vérifie la chaîne. 127.0.0.1 sert à la CLI
+# vault dans le pod (VAULT_ADDR du chart).
+resource "kubernetes_manifest" "tls" {
+  manifest = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = local.tls_secret_name
+      namespace = kubernetes_namespace.vault.metadata[0].name
+    }
+    spec = {
+      secretName  = local.tls_secret_name
+      ipAddresses = [var.load_balancer_ip, "127.0.0.1"]
+      issuerRef = {
+        group = "cert-manager.io"
+        kind  = "ClusterIssuer"
+        name  = var.cluster_issuer_name
+      }
+    }
+  }
+
+  # Le pod Vault monte ce secret : attendre qu'il soit émis avant de
+  # modifier la release.
+  wait {
+    condition {
+      type   = "Ready"
+      status = "True"
+    }
   }
 }
 
@@ -42,8 +81,15 @@ resource "helm_release" "vault" {
   wait    = true
   timeout = 300
 
+  depends_on = [kubernetes_manifest.tls]
+
   values = [
     yamlencode({
+      global = {
+        # Le chart passe alors VAULT_ADDR / sondes en https.
+        tlsDisable = false
+      }
+
       injector = {
         enabled = false # pas d'injection de sidecar en v1 — voir ADR-003, ESO est le pont retenu
       }
@@ -51,6 +97,37 @@ resource "helm_release" "vault" {
       server = {
         standalone = {
           enabled = true
+          # Configuration par défaut du chart, avec le listener en TLS.
+          config = <<-EOT
+            ui = true
+
+            listener "tcp" {
+              address         = "[::]:8200"
+              cluster_address = "[::]:8201"
+              tls_cert_file   = "${local.tls_dir}/tls.crt"
+              tls_key_file    = "${local.tls_dir}/tls.key"
+            }
+
+            storage "file" {
+              path = "/vault/data"
+            }
+          EOT
+        }
+
+        extraVolumes = [
+          { type = "secret", name = local.tls_secret_name }
+        ]
+
+        # La CLI vault du pod vérifie le certificat avec la CA interne.
+        extraEnvironmentVars = {
+          VAULT_CACERT = "${local.tls_dir}/ca.crt"
+        }
+
+        service = {
+          type = "LoadBalancer"
+          annotations = {
+            "metallb.io/loadBalancerIPs" = var.load_balancer_ip
+          }
         }
 
         ha = {
@@ -83,48 +160,4 @@ resource "helm_release" "vault" {
       }
     })
   ]
-}
-
-# Publication de Vault (UI + API) sur le LAN via l'ingress, en HTTPS avec un
-# certificat de la CA interne (voir ADR-006). Le TLS est terminé par
-# Traefik : entre Traefik et le pod, le trafic reste en HTTP dans le cluster
-# (listener Vault tls_disable = 1).
-resource "kubernetes_ingress_v1" "vault" {
-  count = var.ingress_host == null ? 0 : 1
-
-  metadata {
-    name      = "vault"
-    namespace = kubernetes_namespace.vault.metadata[0].name
-    annotations = {
-      "cert-manager.io/cluster-issuer" = var.cluster_issuer_name
-    }
-  }
-
-  spec {
-    ingress_class_name = var.ingress_class_name
-
-    tls {
-      hosts       = [var.ingress_host]
-      secret_name = "vault-tls"
-    }
-
-    rule {
-      host = var.ingress_host
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              # Service créé par le chart : nom = nom de la release.
-              name = helm_release.vault.name
-              port {
-                number = 8200
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 }

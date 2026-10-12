@@ -27,4 +27,13 @@ if ! grep -q "${actual}" features/security/cert-manager/README.md; then
   echo "README cert-manager : empreinte différente de $crt ($actual)"
   status=1
 fi
+# caBundle du ClusterSecretStore External Secrets = même certificat
+store="features/security/external-secrets/gitops/clustersecretstore.yaml"
+if [ -f "$store" ]; then
+  bundle="$(sed -n 's/^ *caBundle: *//p' "$store")"
+  if [ "$(printf '%s' "$bundle" | base64 -d 2>/dev/null)" != "$(cat "$crt")" ]; then
+    echo "$store : caBundle différent de $crt"
+    status=1
+  fi
+fi
 exit "$status"

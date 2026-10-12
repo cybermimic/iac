@@ -64,17 +64,19 @@ ADR-008 acceptée, `Application` racine appliquée, app-of-apps active sur
 ### 2. Nettoyage DNS et services internes par IP
 
 - ✅ `networking/lan-dns` supprimée (2026-10-12, 3 ressources détruites).
-- 🤖 Vault sur `https://192.168.1.243` : listener Vault en TLS (certificat
-  de la CA interne avec l'IP), `Service` `LoadBalancer` ; retrait de son
-  Ingress. Règle au passage la dette « Vault en HTTP dans le cluster ».
+- ✅ Vault sur `https://192.168.1.243:8200` (2026-10-12) : listener en TLS
+  (certificat CA interne, IP uniquement), `Service` `LoadBalancer`, Ingress
+  retiré ; `ClusterSecretStore` d'External Secrets repointé. Règle la dette
+  « Vault en HTTP dans le cluster ».
 - 🤖 ArgoCD sur `https://192.168.1.244` : TLS par argocd-server lui-même
   (`server.insecure` retiré), `Service` `LoadBalancer` ; retrait de son
   Ingress.
-- 🤖 Vérifier qu'un certificat de la CA interne avec une IP est accepté
-  par les navigateurs. La contrainte de nom actuelle ne porte que sur les
-  noms DNS ; si besoin (ou pour durcir), ajouter la plage
-  `192.168.1.240/28` aux noms autorisés de la CA — son certificat change
-  alors (même clé) et doit être réinstallé une fois sur les postes.
+- ✅ Certificat de la CA interne contenant une IP : accepté malgré la
+  contrainte de nom de la CA (elle ne porte que sur les noms DNS ; les IP
+  ne sont pas contraintes) — vérifié avec OpenSSL, reste à voir dans le
+  navigateur. Durcissement possible plus tard : limiter aussi les IP à la
+  plage MetalLB dans la CA (son certificat change alors, à réinstaller une
+  fois sur les postes).
 - 👤 Unseal de Vault après son redémarrage (changement de listener).
 
 ### 3. External Secrets — code déployé, configuration Vault à faire
@@ -82,11 +84,13 @@ ADR-008 acceptée, `Application` racine appliquée, app-of-apps active sur
 Déjà en place : `gitops/apps/external-secrets.yaml` (chart 2.12.0) et
 `ClusterSecretStore` `vault`, en échec tant que Vault n'est pas configuré.
 
-- 👤 Dans son terminal (le token Vault ne passe jamais par un agent), une
-  fois l'étape 2 faite (adapter l'adresse si Vault n'a pas encore bougé) :
+- 👤 Dans son terminal (le token Vault ne passe jamais par un agent), via
+  la CLI du pod (déjà configurée pour `https://127.0.0.1:8200` et la CA
+  interne) :
 
   ```bash
-  export VAULT_ADDR=https://192.168.1.243
+  kubectl -n vault exec -it vault-0 -- sh
+  # puis, dans le pod :
   vault login   # token admin, saisie masquée
   vault secrets enable -path=secret kv-v2
   vault auth enable kubernetes
@@ -94,12 +98,16 @@ Déjà en place : `gitops/apps/external-secrets.yaml` (chart 2.12.0) et
   vault policy write inner-riddle - <<'HCL'
   path "secret/data/inner-riddle/*" { capabilities = ["read"] }
   HCL
-  vault write auth/kubernetes/role/inner-riddle \
+  # Rôle utilisé par le ClusterSecretStore « vault » (role: external-secrets)
+  vault write auth/kubernetes/role/external-secrets \
     bound_service_account_names=external-secrets \
     bound_service_account_namespaces=external-secrets \
     policies=inner-riddle ttl=1h
+  exit
   ```
 
+  Les politiques des consommateurs suivants (registre, runners, ArgoCD)
+  s'ajouteront à ce rôle (`policies=inner-riddle,registry,…`).
   Le détail (rôle exact, politiques des autres consommateurs : registre,
   runners, ArgoCD) est dans `features/security/external-secrets/README.md`.
 

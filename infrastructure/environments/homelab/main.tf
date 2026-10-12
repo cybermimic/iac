@@ -13,11 +13,11 @@ module "vault" {
 
   storage_class_name = module.local_path_storage.storage_class_name
 
-  # Publication HTTPS : dépendances explicites sur l'ingress et la CA via
-  # leurs outputs.
-  ingress_host        = "vault.${var.homelab_domain}"
-  ingress_class_name  = module.ingress.ingress_class_name
+  # Propre IP LAN + TLS par Vault lui-même (ADR-009) : dépendances
+  # explicites sur MetalLB (IP) et la CA interne (certificat).
+  load_balancer_ip    = var.vault_load_balancer_ip
   cluster_issuer_name = module.cert_manager.cluster_issuer_name
+  depends_on          = [module.metallb]
 }
 
 module "ingress" {

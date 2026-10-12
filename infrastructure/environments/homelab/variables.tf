@@ -22,3 +22,8 @@ variable "homelab_domain" {
   type        = string
   default     = "homelab.lan"
 }
+
+variable "vault_load_balancer_ip" {
+  description = "IP LAN fixe de Vault (ex: 192.168.1.243), dans la plage metallb_ip_range (ADR-009). Vault : https://<ip>:8200."
+  type        = string
+}

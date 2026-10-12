@@ -71,11 +71,6 @@ le rechercher comme référence.
   clé (`~/.ssh/github`) sert à la fois pour GitHub et pour l'accès SSH au
   NucBox. À séparer proprement (clé dédiée par usage) quand l'occasion se
   présente.
-- **TLS de Vault terminé à l'ingress** — `https://vault.homelab.lan` est
-  en HTTPS (CA interne), mais entre Traefik et le pod Vault le trafic
-  reste en HTTP dans le cluster (single-node). TLS de bout en bout
-  (listener Vault en TLS) possible plus tard si le cluster devient
-  multi-nœuds.
 - **Unseal Vault manuel** — Vault est initialisé, mais se re-scelle à
   chaque redémarrage du pod ou du NucBox : l'unseal reste une opération
   humaine, jamais automatisée (voir `features/security/vault/README.md`,
