@@ -1,0 +1,54 @@
+# Application business inner-riddle (dépôt privé, ADR-002) :
+# https://inner-riddle.cybermimic.com. Ce repo ne contient que le contrat
+# de déploiement ; le chart vit avec le code (deploy/chart).
+#
+# Synchronisation MANUELLE (application business, ADR-002 / ADR-008) :
+# changer de version = modifier targetRevision ici (PR), puis « Sync »
+# dans ArgoCD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: inner-riddle
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: git@github.com:cybermimic/inner-riddle.git # accès : repositories/inner-riddle-repo.yaml
+      targetRevision: v0.1.0 # version déployée (étiquette publiée par la CI)
+      path: deploy/chart
+      helm:
+        valuesObject:
+          host: inner-riddle.cybermimic.com
+          image:
+            registry: 192.168.1.242
+          imagePullSecrets:
+            - name: registry-pull
+          ingress:
+            className: traefik # ingress public, namespace autorisé (ADR-009)
+            # Valider d'abord en staging, puis passer à « letsencrypt ».
+            clusterIssuer: letsencrypt-staging
+          persistence:
+            storageClass: local-path
+          externalSecret:
+            enabled: true
+            secretStoreRef:
+              name: vault
+              kind: ClusterSecretStore
+            remoteKey: inner-riddle/auth # propriétés accounts et session_secret
+          networkPolicy:
+            ingressNamespaces: [traefik]
+    # Pull secret du registre.
+    - repoURL: https://github.com/cybermimic/iac.git
+      targetRevision: main
+      path: gitops/inner-riddle
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: inner-riddle
+  syncPolicy:
+    # Pas de bloc « automated » : synchronisation manuelle.
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        # Les pods du chart respectent la politique « restricted ».
+        pod-security.kubernetes.io/enforce: restricted

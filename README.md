@@ -52,7 +52,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `delivery/registry` (Zot) | ✅ Livré par ArgoCD sur `https://192.168.1.242` ([ADR-010](docs/adr/ADR-010-container-registry.md)) — playbook CA du nœud à lancer |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ⏳ Livré par ArgoCD (scale set `homelab` pour inner-riddle) — attend la GitHub App ([ADR-011](docs/adr/ADR-011-ci-runners.md)) |
-| Application inner-riddle | ⏳ En cours — [plan inner-riddle](docs/plans/inner-riddle.md) |
+| Application inner-riddle | ⏳ Déclarée dans ArgoCD (sync manuelle), attend la version `v0.1.0` — [plan inner-riddle](docs/plans/inner-riddle.md) |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)
 pour le détail des décisions déjà prises, et

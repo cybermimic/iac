@@ -268,7 +268,7 @@ jetons acceptés à ceux émis pour Vault.
   - `maxRunners: 1` : les jobs de la CI passent les uns après les autres.
   Le workflow `Release` publie alors à chaque étiquette `vX.Y.Z`.
 
-### 7. Application inner-riddle
+### 7. Application inner-riddle — code livré (2026-10-13), attend la version v0.1.0
 
 - 👤 Générer une **clé de déploiement SSH en lecture seule** pour le dépôt
   inner-riddle (GitHub → Settings → Deploy keys), ranger la clé privée dans
@@ -279,51 +279,24 @@ jetons acceptés à ceux émis pour Vault.
   `inner-riddle hash-password` (saisie sans écho) et
   `inner-riddle new-session-secret` — voir `docs/deployment.md`
   d'inner-riddle.
-- 🤖 `ExternalSecret` du dépôt pour ArgoCD (label
-  `argocd.argoproj.io/secret-type: repository`), puis
-  `gitops/apps/inner-riddle.yaml`, esquisse :
-
-  ```yaml
-  apiVersion: argoproj.io/v1alpha1
-  kind: Application
-  metadata:
-    name: inner-riddle
-    namespace: argocd
-  spec:
-    project: default
-    source:
-      repoURL: git@github.com:cybermimic/inner-riddle.git
-      targetRevision: v0.1.0          # version déployée : changer = une PR ici
-      path: deploy/chart
-      helm:
-        valuesObject:
-          host: inner-riddle.cybermimic.com
-          image:
-            registry: 192.168.1.242
-          ingress:
-            className: traefik
-            clusterIssuer: letsencrypt-staging   # puis letsencrypt (étape 8)
-          imagePullSecrets: [{name: registry-pull}]
-          persistence:
-            storageClass: local-path
-          externalSecret:
-            enabled: true
-            secretStoreRef: {name: vault, kind: ClusterSecretStore}
-            remoteKey: inner-riddle/auth   # propriétés « accounts » et « session_secret »
-          networkPolicy:
-            ingressNamespaces: [traefik]
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: inner-riddle
-    syncPolicy:
-      syncOptions: [CreateNamespace=true]
-      # Synchronisation manuelle : application business (ADR-002, ADR-008).
-  ```
-
-  Noms exacts des valeurs : `deploy/chart/README.md` d'inner-riddle (à
-  relire au moment d'écrire le fichier). Le namespace peut porter
-  `pod-security.kubernetes.io/enforce: restricted`. HSTS est posé par
-  l'application : aucun middleware Traefik n'est requis.
+- ✅ Code livré (vérifié par `helm template` du chart d'inner-riddle avec
+  ces valeurs) :
+  - `gitops/apps/repositories/inner-riddle-repo.yaml` : `ExternalSecret`
+    qui fabrique le Secret « repository » d'ArgoCD (clé SSH de
+    `secret/argocd/repo-inner-riddle`) ;
+  - `gitops/inner-riddle/registry-pull.yaml` : pull secret
+    `registry-pull` (`kubernetes.io/dockerconfigjson`, compte
+    `cluster-pull`) ;
+  - `gitops/apps/inner-riddle.yaml` : Application, `targetRevision:
+    v0.1.0`, images `192.168.1.242/inner-riddle/*`, classe `traefik`,
+    `letsencrypt-staging`, `local-path`, comptes depuis
+    `inner-riddle/auth`, namespace en Pod Security `restricted`,
+    **synchronisation manuelle**.
+- 👤 Publier la première version : dans le dépôt inner-riddle, étiquette
+  `v0.1.0` (la version du chart vaut déjà `0.1.0`) → le workflow `Release`
+  tourne sur les runners `homelab` et publie les images dans le registre.
+  Tant que l'étiquette n'existe pas, l'Application affiche une erreur de
+  comparaison : c'est attendu.
 
 ### 8. Mise en ligne
 

@@ -1,0 +1,31 @@
+# Accès d'ArgoCD au dépôt PRIVÉ cybermimic/inner-riddle : clé de
+# déploiement SSH en lecture seule, rangée dans Vault par l'opérateur
+# (docs/plans/inner-riddle.md, commandes C). External Secrets fabrique le
+# Secret « repository » qu'ArgoCD reconnaît par son label. github.com fait
+# partie des clés d'hôte SSH connues par défaut d'ArgoCD.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: repo-inner-riddle
+  namespace: argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: repo-inner-riddle
+    creationPolicy: Owner
+    template:
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      data:
+        type: git
+        url: git@github.com:cybermimic/inner-riddle.git
+        sshPrivateKey: "{{ .ssh_private_key }}"
+  data:
+    - secretKey: ssh_private_key
+      remoteRef:
+        key: argocd/repo-inner-riddle
+        property: ssh_private_key

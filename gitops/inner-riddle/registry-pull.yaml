@@ -1,0 +1,22 @@
+# Pull secret du registre (compte de lecture cluster-pull, Vault
+# secret/registry/pull) pour les pods d'inner-riddle : imagePullSecrets
+# « registry-pull » dans les valeurs de l'Application.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: registry-pull
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: registry-pull
+    creationPolicy: Owner
+    template:
+      type: kubernetes.io/dockerconfigjson
+      data:
+        .dockerconfigjson: '{"auths":{"192.168.1.242":{"username":"{{ .username }}","password":"{{ .password }}","auth":"{{ printf "%s:%s" .username .password | b64enc }}"}}}'
+  dataFrom:
+    - extract:
+        key: registry/pull
