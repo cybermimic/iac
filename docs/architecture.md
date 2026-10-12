@@ -61,7 +61,7 @@ single-node.
 | `networking/lan-dns` | 🗑️ Supprimé le 2026-10-12 ([ADR-007](adr/ADR-007-lan-dns.md) abandonné) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — ClusterIssuer `homelab-ca` |
 | `delivery/argocd` | ✅ Déployé, app-of-apps active ([ADR-008](adr/ADR-008-gitops-layout.md)) |
-| `security/external-secrets` | ⏳ Déclaré dans `gitops/apps/`, attend la config Vault opérateur |
+| `security/external-secrets` | ✅ Déployé (ArgoCD), connecté à Vault |
 | `observability/*`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 | Exposition publique, registre, runners CI | 📋 Décidé, à implémenter ([ADR-009](adr/ADR-009-public-exposure.md)/[010](adr/ADR-010-container-registry.md)/[011](adr/ADR-011-ci-runners.md)) |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |

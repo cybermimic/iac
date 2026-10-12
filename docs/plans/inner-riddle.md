@@ -79,10 +79,17 @@ ADR-008 acceptée, `Application` racine appliquée, app-of-apps active sur
   fois sur les postes).
 - 👤 Unseal de Vault après son redémarrage (changement de listener).
 
-### 3. External Secrets — code déployé, configuration Vault à faire
+### 3. External Secrets — ✅ fait (2026-10-12)
 
-Déjà en place : `gitops/apps/external-secrets.yaml` (chart 2.12.0) et
-`ClusterSecretStore` `vault`, en échec tant que Vault n'est pas configuré.
+`gitops/apps/external-secrets.yaml` (chart 2.12.0) et `ClusterSecretStore`
+`vault` → `https://192.168.1.243:8200` : **`Valid`** depuis que l'opérateur
+a configuré Vault (commandes ci-dessous, faites le 2026-10-12).
+
+Suite possible (durcissement) : Vault avertit que le rôle
+`external-secrets` n'a pas d'`audience` ; en ajouter une (`vault write
+auth/kubernetes/role/external-secrets audience=vault …` + `audiences:
+[vault]` dans `serviceAccountRef` du `ClusterSecretStore`) restreindrait les
+jetons acceptés à ceux émis pour Vault.
 
 - 👤 Dans son terminal (le token Vault ne passe jamais par un agent), via
   la CLI du pod (déjà configurée pour `https://127.0.0.1:8200` et la CA
