@@ -32,3 +32,13 @@ variable "argocd_load_balancer_ip" {
   description = "IP LAN fixe d'ArgoCD (ex: 192.168.1.244), dans la plage metallb_ip_range (ADR-009). ArgoCD : https://<ip>."
   type        = string
 }
+
+variable "public_namespaces" {
+  description = "Namespaces dont l'ingress public (Traefik) sert les Ingress (ADR-009), ex: [\"inner-riddle\"]. Jamais vide."
+  type        = list(string)
+}
+
+variable "acme_email" {
+  description = "Adresse e-mail du compte Let's Encrypt (avis d'expiration). Donnée non secrète."
+  type        = string
+}

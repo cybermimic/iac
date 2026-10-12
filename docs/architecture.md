@@ -57,7 +57,7 @@ single-node.
 | `networking/metallb` | ✅ Déployé |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé, initialisé, `https://192.168.1.243:8200` (TLS de bout en bout) — unseal manuel (humain) après chaque redémarrage |
-| `networking/ingress` (Traefik) | ✅ Déployé — à convertir en ingress public ([ADR-009](adr/ADR-009-public-exposure.md)) |
+| `networking/ingress` (Traefik) | ✅ Ingress public + Let's Encrypt, ports pas encore redirigés ([ADR-009](adr/ADR-009-public-exposure.md)) |
 | `networking/lan-dns` | 🗑️ Supprimé le 2026-10-12 ([ADR-007](adr/ADR-007-lan-dns.md) abandonné) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — ClusterIssuer `homelab-ca` |
 | `delivery/argocd` | ✅ Déployé, `https://192.168.1.244`, app-of-apps active ([ADR-008](adr/ADR-008-gitops-layout.md)) |

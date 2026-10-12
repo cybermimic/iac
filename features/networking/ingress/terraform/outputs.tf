@@ -3,7 +3,7 @@ output "namespace" {
 }
 
 output "ingress_class_name" {
-  description = "IngressClass à référencer dans les Ingress (classe par défaut du cluster)"
+  description = "IngressClass publique à référencer explicitement (non par défaut)"
   value       = local.ingress_class_name
 }
 

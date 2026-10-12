@@ -200,13 +200,16 @@ jetons acceptés à ceux émis pour Vault.
   Le détail (rôle exact, politiques des autres consommateurs : registre,
   runners, ArgoCD) est dans `features/security/external-secrets/README.md`.
 
-### 4. Traefik public + Let's Encrypt
+### 4. Traefik public + Let's Encrypt — ✅ fait (2026-10-13)
 
-- 🤖 `networking/ingress` : IngressClass `traefik` non par défaut, liste
-  de namespaces autorisés (`["inner-riddle"]`), provider CRD désactivé,
-  exception ACME à la redirection HTTP → HTTPS, journaux d'accès.
-- 🤖 `security/cert-manager` : ClusterIssuers `letsencrypt-staging` et
-  `letsencrypt` (HTTP-01).
+- ✅ `networking/ingress` : IngressClass `traefik` non par défaut,
+  namespaces servis `["inner-riddle"]` (liste vide interdite), provider CRD
+  désactivé, journaux d'accès. Pas d'exception à la redirection HTTP →
+  HTTPS : le challenge HTTP-01 la suit.
+- ✅ `security/cert-manager` : ClusterIssuers `letsencrypt-staging` et
+  `letsencrypt` (HTTP-01), comptes ACME enregistrés.
+- ✅ IPv4 full-stack confirmée par l'opérateur ; enregistrement `A`
+  `inner-riddle.cybermimic.com` créé chez OVH.
 - 👤 Vérifier que la ligne Free a une **IPv4 publique complète**
   (« full-stack ») : Freebox OS → État de la Freebox → Internet, la plage
   de ports doit être `0-65535` ; sinon, la demander dans l'espace abonné

@@ -2,21 +2,35 @@
 
 ## Objectif
 
-Point d'entrée HTTP(S) unique du cluster depuis le LAN : Traefik, exposé
-sur une IP fixe fournie par MetalLB. Les services (Vault, ArgoCD…) sont
-publiés derrière lui via des `Ingress` (ou `IngressRoute` Traefik) plutôt
-qu'avec une IP LoadBalancer chacun. Choix et alternatives :
-[ADR-006](../../../docs/adr/ADR-006-ingress-and-internal-tls.md).
+**Ingress public** du homelab : Traefik, sur une IP LAN fixe fournie par
+MetalLB (`192.168.1.240`), la **seule** IP que la Freebox redirige depuis
+Internet (80/443). Il ne sert que les applications publiques ; les
+services internes (Vault, ArgoCD…) ont chacun leur propre IP et n'y
+passent jamais ([ADR-009](../../../docs/adr/ADR-009-public-exposure.md),
+option D ; historique : [ADR-006](../../../docs/adr/ADR-006-ingress-and-internal-tls.md)).
+
+### Garde-fous (une ressource ne devient pas publique par erreur)
+
+- IngressClass `traefik` **non par défaut** : un `Ingress` sans
+  `ingressClassName: traefik` n'est pas servi ;
+- provider `kubernetesIngress` limité aux namespaces de
+  `public_namespaces` (aujourd'hui `inner-riddle`) : un `Ingress` ailleurs
+  est ignoré. Liste vide interdite (pour Traefik, vide = tous) ;
+- provider `kubernetesCRD` désactivé : les `IngressRoute` n'ont pas de
+  classe et seraient toutes servies ;
+- Gateway API désactivée.
+
+Publier une application = `ingressClassName: traefik` **et** ajout de son
+namespace à `public_namespaces` : deux changements visibles en revue.
 
 ## Dépendances
 
 - `networking/metallb` — fournit l'IP du Service `LoadBalancer`
   (`depends_on` explicite dans `infrastructure/environments/homelab/main.tf`).
 
-Aucun service ne passe plus par Traefik depuis le 2026-10-12 (Vault et
-ArgoCD ont leur propre IP). Il deviendra l'ingress **public**
-([ADR-009](../../../docs/adr/ADR-009-public-exposure.md), étape 4 du
-[plan inner-riddle](../../../docs/plans/inner-riddle.md)).
+Utilisé par : `security/cert-manager` (le challenge HTTP-01 des
+émetteurs Let's Encrypt est servi par cette classe), puis les applications
+publiques (inner-riddle, [plan](../../../docs/plans/inner-riddle.md)).
 
 ## Ressources approximatives
 
@@ -31,6 +45,7 @@ persistant.
 | `namespace` | Namespace d'installation | `traefik` |
 | `chart_version` | Version du chart `traefik/traefik` | `41.6.0` (Traefik v3.7.13) |
 | `load_balancer_ip` | IP LAN fixe, dans la plage MetalLB | — (requis) |
+| `public_namespaces` | Seuls namespaces servis (jamais vide) | — (requis, `["inner-riddle"]` au niveau env) |
 | `requests_*` / `limits_*` | Ressources du pod | voir `variables.tf` |
 | `tolerate_control_plane_taint` | Toleration control-plane (single-node) | `true` |
 
@@ -42,13 +57,16 @@ persistant.
 
 - **Redirection** : tout le HTTP (port 80) est redirigé en permanence
   (301) vers HTTPS (443).
-- **Certificats** : fournis par chaque service via cert-manager
-  (annotation `cert-manager.io/cluster-issuer: homelab-ca` sur l'Ingress,
-  voir [security/cert-manager](../../security/cert-manager/README.md)).
-  Un nom sans certificat reçoit le certificat auto-signé par défaut de
-  Traefik (avertissement navigateur).
+- **Certificats** : **Let's Encrypt** (annotation
+  `cert-manager.io/cluster-issuer: letsencrypt-staging` pour valider, puis
+  `letsencrypt`), voir [security/cert-manager](../../security/cert-manager/README.md).
+  Le challenge HTTP-01 suit la redirection HTTP → HTTPS (Let's Encrypt ne
+  vérifie pas le certificat à ce stade). Un nom sans certificat reçoit le
+  certificat auto-signé par défaut de Traefik.
 - **TLS terminé par Traefik** : entre Traefik et les pods, le trafic reste
   en HTTP à l'intérieur du cluster.
+- **Journaux d'accès** activés (`kubectl -n traefik logs deploy/traefik`),
+  en-têtes non journalisés.
 
 ## Ce qui est volontairement hors de cette version
 
@@ -66,6 +84,7 @@ Assemblée avec les autres features dans `infrastructure/environments/homelab`
 
 ```hcl
 ingress_load_balancer_ip = "192.168.1.240"
+public_namespaces        = ["inner-riddle"]
 ```
 
 Puis `terraform plan` (doit montrer uniquement des créations dans
@@ -75,7 +94,7 @@ Vérification :
 
 ```bash
 kubectl -n traefik get pods,svc          # pod Running, EXTERNAL-IP = load_balancer_ip
-kubectl get ingressclass                 # traefik (default)
+kubectl get ingressclass                 # traefik, SANS « (default) »
 curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.240/   # 404 attendu ; à lancer depuis un AUTRE poste du LAN
 ```
 
@@ -102,6 +121,14 @@ restent en place (rétrocompatibles en général). En dernier recours :
 cluster le temps de la réinstallation.
 
 ## Troubleshooting
+
+- `values don't meet the specifications of the schema` au `apply` → clé de
+  values inconnue du chart (le chart valide ses values) ; ex. les journaux
+  d'accès sont `accessLog.enabled` depuis le chart v38, plus
+  `logs.access.enabled`.
+- Une application publique répond `404` → vérifier que son namespace est
+  dans `public_namespaces` et que son Ingress déclare
+  `ingressClassName: traefik`.
 
 - `EXTERNAL-IP` en `<pending>` → IP hors de la plage MetalLB, ou déjà
   attribuée à un autre Service : `kubectl -n traefik describe svc traefik`

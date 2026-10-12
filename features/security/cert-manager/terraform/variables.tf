@@ -45,3 +45,13 @@ variable "tolerate_control_plane_taint" {
   type        = bool
   default     = true
 }
+
+variable "acme_email" {
+  description = "Adresse e-mail du compte Let's Encrypt (avis d'expiration). Donnée non secrète."
+  type        = string
+}
+
+variable "public_ingress_class_name" {
+  description = "IngressClass de l'ingress public qui sert le challenge HTTP-01 (output de networking/ingress)"
+  type        = string
+}

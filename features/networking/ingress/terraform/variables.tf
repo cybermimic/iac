@@ -49,3 +49,19 @@ variable "tolerate_control_plane_taint" {
   type        = bool
   default     = true
 }
+
+variable "public_namespaces" {
+  description = <<-EOT
+    Seuls namespaces dont Traefik sert les Ingress (classe "traefik") : une
+    application devient publique en étant ajoutée ici ET en déclarant
+    ingressClassName "traefik" (ADR-009).
+  EOT
+  type        = list(string)
+
+  # Pour Traefik, une liste vide veut dire « tous les namespaces » : le
+  # garde-fou s'ouvrirait en grand. Interdit.
+  validation {
+    condition     = length(var.public_namespaces) > 0
+    error_message = "public_namespaces ne doit pas être vide : pour Traefik, vide = tous les namespaces."
+  }
+}

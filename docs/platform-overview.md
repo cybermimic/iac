@@ -23,7 +23,7 @@ le LAN d'une Freebox Pop (Freebox OS 4.13), qui fait routeur, DHCP et DNS.
 | `192.168.1.253` | NucBox (bail DHCP **statique**) | Freebox → DHCP → Baux statiques |
 | `192.168.1.254` | Freebox (passerelle, DNS de tout le LAN) | — |
 | `192.168.1.240` – `.250` | Réservé à MetalLB (IP des Services `LoadBalancer`), **hors** plage DHCP | Terraform (`metallb_ip_range`) |
-| `192.168.1.240` | Traefik — futur ingress **public** (seule IP qui sera redirigée depuis Internet) ; ne sert rien aujourd'hui | Terraform (`ingress_load_balancer_ip`) |
+| `192.168.1.240` | Traefik — ingress **public** (seule IP redirigée depuis Internet, une fois la redirection faite) ; ne sert que les namespaces de `public_namespaces` | Terraform (`ingress_load_balancer_ip`, `public_namespaces`) |
 | `192.168.1.241` | Libre | — |
 | `192.168.1.242` | Registre Zot (prévu, [ADR-010](adr/ADR-010-container-registry.md)) | — |
 | `192.168.1.243` | **Vault** — `https://192.168.1.243:8200` | Terraform (`vault_load_balancer_ip`) |
@@ -87,7 +87,7 @@ Même schéma pour ArgoCD (`https://192.168.1.244`, TLS par argocd-server).
 | Vault | Coffre à secrets, `https://192.168.1.243:8200`, TLS de bout en bout | `vault` | Terraform (serveur) + humain (init / unseal / configuration) | [security/vault](../features/security/vault/README.md) |
 | ArgoCD | GitOps, `https://192.168.1.244` ; Application racine qui suit `gitops/apps/` ([ADR-008](adr/ADR-008-gitops-layout.md)) | `argocd` | Terraform | [delivery/argocd](../features/delivery/argocd/README.md) |
 | External Secrets | Pont Vault → Secrets Kubernetes (`ClusterSecretStore` `vault`) | `external-secrets` | **ArgoCD** | [security/external-secrets](../features/security/external-secrets/README.md) |
-| Traefik | Ingress — à convertir en ingress **public** ; ne sert aucun service aujourd'hui | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
+| Traefik | Ingress **public** (classe non par défaut, namespaces autorisés) ; certificats Let's Encrypt | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
 
 Les pods « système » (apiserver, etcd, calico-node, kube-proxy, speaker
 MetalLB) utilisent directement le réseau du NucBox (`hostNetwork`) ; les

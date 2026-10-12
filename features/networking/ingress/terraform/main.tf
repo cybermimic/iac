@@ -1,11 +1,19 @@
-# Traefik comme contrôleur d'ingress (voir ADR-006), exposé sur une IP LAN
-# fixe fournie par MetalLB. Première version volontairement minimale :
-# - IngressClass "traefik" par défaut + CRDs IngressRoute/Middleware ;
-# - pas de Gateway API (CRDs non installés, provider désactivé) ;
-# - dashboard actif mais non exposé (accès par kubectl port-forward) ;
-# - HTTP (port 80) redirigé en HTTPS (443) de façon permanente ; chaque
-#   service fournit son certificat (cert-manager, CA interne). Un nom sans
-#   certificat reçoit le certificat auto-signé par défaut de Traefik.
+# Traefik = ingress **public** (ADR-009, option D) sur une IP LAN fixe
+# fournie par MetalLB : la seule IP que la Freebox redirige depuis Internet
+# (80/443). Les services internes n'y passent jamais : ils ont chacun leur
+# propre IP.
+#
+# Garde-fous, pour qu'une ressource ne devienne pas publique par erreur :
+# - IngressClass "traefik" NON par défaut : un Ingress sans classe explicite
+#   n'est pas servi ;
+# - provider kubernetesIngress limité à une liste explicite de namespaces
+#   (public_namespaces) : un Ingress hors de cette liste est ignoré ;
+# - provider kubernetesCRD désactivé : les IngressRoute n'ont pas de classe
+#   et seraient toutes servies ;
+# - Gateway API désactivée (CRDs non installés).
+# HTTP redirigé en HTTPS ; le challenge ACME HTTP-01 de Let's Encrypt suit
+# cette redirection (le certificat n'est pas vérifié à ce stade). Journaux
+# d'accès activés.
 
 locals {
   ingress_class_name = "traefik"
@@ -41,8 +49,22 @@ resource "helm_release" "traefik" {
 
       ingressClass = {
         enabled        = true
-        isDefaultClass = true
+        isDefaultClass = false
         name           = local.ingress_class_name
+      }
+
+      providers = {
+        kubernetesCRD = {
+          enabled = false
+        }
+        kubernetesIngress = {
+          namespaces = var.public_namespaces
+        }
+      }
+
+      # Journaux d'accès (chart >= v38 : clé accessLog, plus logs.access).
+      accessLog = {
+        enabled = true
       }
 
       # Tout le HTTP est redirigé vers HTTPS (redirection permanente, 301).

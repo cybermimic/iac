@@ -23,7 +23,8 @@ module "vault" {
 module "ingress" {
   source = "../../../features/networking/ingress/terraform"
 
-  load_balancer_ip = var.ingress_load_balancer_ip
+  load_balancer_ip  = var.ingress_load_balancer_ip
+  public_namespaces = var.public_namespaces
 
   # Dépend de MetalLB : sans IPAddressPool, le Service LoadBalancer de
   # Traefik resterait <pending> et le helm_release (wait = true) échouerait.
@@ -35,6 +36,11 @@ module "cert_manager" {
 
   # La CA interne ne peut signer que pour ce domaine (name constraint).
   domain = var.homelab_domain
+
+  # Let's Encrypt (applications publiques) : challenge servi par l'ingress
+  # public, dépendance explicite via son output.
+  acme_email                = var.acme_email
+  public_ingress_class_name = module.ingress.ingress_class_name
 }
 
 module "argocd" {

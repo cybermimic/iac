@@ -148,3 +148,47 @@ resource "kubernetes_manifest" "homelab_ca_issuer" {
     }
   }
 }
+
+# Let's Encrypt pour les applications publiques (ADR-009) : challenge
+# HTTP-01, servi par l'ingress public (Traefik, seule IP redirigée par la
+# Freebox). Deux émetteurs : staging (certificats non reconnus, limites de
+# débit larges) pour valider la chaîne, puis production. La clé du compte
+# ACME est générée par cert-manager dans le secret indiqué : aucun secret à
+# fournir.
+locals {
+  acme_servers = {
+    "letsencrypt-staging" = "https://acme-staging-v02.api.letsencrypt.org/directory"
+    "letsencrypt"         = "https://acme-v02.api.letsencrypt.org/directory"
+  }
+}
+
+resource "kubernetes_manifest" "letsencrypt_issuer" {
+  for_each   = local.acme_servers
+  depends_on = [helm_release.cert_manager]
+
+  manifest = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "ClusterIssuer"
+    metadata = {
+      name = each.key
+    }
+    spec = {
+      acme = {
+        server = each.value
+        email  = var.acme_email
+        privateKeySecretRef = {
+          name = "${each.key}-account-key"
+        }
+        solvers = [
+          {
+            http01 = {
+              ingress = {
+                ingressClassName = var.public_ingress_class_name
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

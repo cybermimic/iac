@@ -28,6 +28,21 @@ ClusterIssuer "selfsigned-bootstrap"   ne sert qu'à signer la racine
 - **Secrets** : `tls.key` du secret `homelab-root-ca` ne sort jamais du
   cluster. `ca.crt` est public (c'est lui qu'on distribue).
 
+## Let's Encrypt (applications publiques)
+
+Deux `ClusterIssuer` ACME, challenge **HTTP-01** servi par l'ingress
+public (classe `traefik`, [ADR-009](../../../docs/adr/ADR-009-public-exposure.md)) :
+
+| Émetteur | Usage |
+|---|---|
+| `letsencrypt-staging` | Valider la chaîne de bout en bout (certificat **non reconnu** par les navigateurs, limites de débit larges) |
+| `letsencrypt` | Production, une fois le staging réussi |
+
+La clé de chaque compte ACME est générée par cert-manager (secrets
+`letsencrypt-staging-account-key`, `letsencrypt-account-key`) : rien à
+fournir. Le challenge exige que le nom public pointe vers l'IP publique
+de la ligne et que la Freebox redirige le port 80 vers `192.168.1.240`.
+
 ## Dépendances
 
 Aucune feature requise pour fonctionner. Consommateurs :
@@ -51,6 +66,8 @@ total (controller 19, cainjector 17, webhook 10), ~30 mCPU. Un Job
 | `ca_common_name` | Nom affiché de la CA | `Homelab Root CA` |
 | `ca_duration` | Validité de la CA | `87600h` (10 ans) |
 | `tolerate_control_plane_taint` | Tolerations control-plane (single-node) | `true` |
+| `acme_email` | E-mail du compte Let's Encrypt (non secret) | — (requis) |
+| `public_ingress_class_name` | Classe de l'ingress public, qui sert le challenge HTTP-01 | — (requis, output de `networking/ingress`) |
 
 ## Outputs
 
