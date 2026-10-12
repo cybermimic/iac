@@ -36,12 +36,22 @@ spec:
                   operator: Exists
                   effect: NoSchedule
           # Modèle Docker-in-Docker du chart (containerMode dind), écrit en
-          # entier pour : épingler les images (le chart utilise :latest) et
-          # faire approuver la CA interne par dockerd, pour pousser vers le
-          # registre https://192.168.1.242.
+          # entier pour : épingler les images (le chart utilise :latest),
+          # faire approuver la CA interne par dockerd (registre
+          # https://192.168.1.242) et ajouter le plugin docker compose.
           template:
             spec:
               initContainers:
+                # L'image actions-runner fournit la CLI docker et buildx, mais
+                # pas compose, dont la CI d'inner-riddle dépend : on copie le
+                # binaire (statique) de l'image docker CLI officielle, même
+                # version que dockerd, dans un dossier de plugins lu par la CLI.
+                - name: install-compose-plugin
+                  image: docker:29.9.0-cli
+                  command: ["cp", "/usr/local/libexec/docker/cli-plugins/docker-compose", "/plugins/"]
+                  volumeMounts:
+                    - name: docker-cli-plugins
+                      mountPath: /plugins
                 - name: init-dind-externals
                   image: ghcr.io/actions/actions-runner:2.338.0
                   command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
@@ -91,6 +101,10 @@ spec:
                       mountPath: /home/runner/_work
                     - name: dind-sock
                       mountPath: /var/run
+                    # Pas /usr/local/lib/docker/cli-plugins : buildx y est déjà.
+                    - name: docker-cli-plugins
+                      mountPath: /usr/local/libexec/docker/cli-plugins
+                      readOnly: true
               tolerations:
                 - key: node-role.kubernetes.io/control-plane
                   operator: Exists
@@ -105,6 +119,8 @@ spec:
                 - name: homelab-ca
                   configMap:
                     name: homelab-ca
+                - name: docker-cli-plugins
+                  emptyDir: {}
     # GitHub App, CA interne, politique réseau.
     - repoURL: https://github.com/cybermimic/iac.git
       targetRevision: main
