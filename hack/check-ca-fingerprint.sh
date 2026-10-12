@@ -36,4 +36,12 @@ if [ -f "$store" ]; then
     status=1
   fi
 fi
+# ConfigMap de la CA montée dans les runners (dockerd) = même certificat
+cm="features/delivery/actions-runners/gitops/inner-riddle/configmap-homelab-ca.yaml"
+if [ -f "$cm" ]; then
+  if [ "$(sed -n '/ca.crt: |/,$p' "$cm" | tail -n +2 | sed 's/^    //')" != "$(cat "$crt")" ]; then
+    echo "$cm : ca.crt différent de $crt"
+    status=1
+  fi
+fi
 exit "$status"

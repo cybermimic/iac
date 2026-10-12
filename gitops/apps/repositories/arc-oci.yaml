@@ -1,0 +1,15 @@
+# Déclare à ArgoCD le dépôt OCI public des charts Actions Runner Controller
+# (ghcr.io), nécessaire pour qu'il les lise en OCI. Aucune donnée secrète :
+# dépôt public, sans identifiant (le type Secret est imposé par ArgoCD).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-arc-oci
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: helm
+  name: actions-runner-controller-charts
+  url: ghcr.io/actions/actions-runner-controller-charts
+  enableOCI: "true"

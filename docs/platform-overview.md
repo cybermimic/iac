@@ -88,6 +88,7 @@ Même schéma pour ArgoCD (`https://192.168.1.244`, TLS par argocd-server).
 | ArgoCD | GitOps, `https://192.168.1.244` ; Application racine qui suit `gitops/apps/` ([ADR-008](adr/ADR-008-gitops-layout.md)) | `argocd` | Terraform | [delivery/argocd](../features/delivery/argocd/README.md) |
 | External Secrets | Pont Vault → Secrets Kubernetes (`ClusterSecretStore` `vault`) | `external-secrets` | **ArgoCD** | [security/external-secrets](../features/security/external-secrets/README.md) |
 | Zot | Registre d'images, `https://192.168.1.242` (htpasswd via External Secrets) | `registry` | **ArgoCD** | [delivery/registry](../features/delivery/registry/README.md) |
+| Actions Runner Controller | Runners GitHub Actions des dépôts privés (scale set `homelab`, DinD, 0 à 1 runner) | `arc-systems`, `arc-runners` | **ArgoCD** | [delivery/actions-runners](../features/delivery/actions-runners/README.md) |
 | Traefik | Ingress **public** (classe non par défaut, namespaces autorisés) ; certificats Let's Encrypt | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
 
 Les pods « système » (apiserver, etcd, calico-node, kube-proxy, speaker

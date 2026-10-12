@@ -1,0 +1,120 @@
+# Runner scale set « homelab » du dépôt privé cybermimic/inner-riddle
+# (ADR-011) : tous ses workflows tournent ici (variables de dépôt
+# CI_RUNNER / RELEASE_RUNNER = homelab). Jamais pour un dépôt public.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-runners-inner-riddle
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: ghcr.io/actions/actions-runner-controller-charts # OCI, voir repositories/arc-oci.yaml
+      chart: gha-runner-scale-set
+      targetRevision: 0.15.0 # jamais latest, voir CLAUDE.md
+      helm:
+        releaseName: inner-riddle
+        valuesObject:
+          githubConfigUrl: https://github.com/cybermimic/inner-riddle
+          # GitHub App (Vault → External Secrets), voir gitops/ de la feature.
+          githubConfigSecret: arc-github-app
+          # Libellé utilisé par `runs-on` dans les workflows du dépôt.
+          runnerScaleSetName: homelab
+          minRunners: 0
+          maxRunners: 1 # contrainte mémoire : un job à la fois
+          # ArgoCD rend le chart sans accès au cluster : le compte du
+          # contrôleur doit être donné explicitement.
+          controllerServiceAccount:
+            namespace: arc-systems
+            name: arc-controller
+          listenerTemplate:
+            spec:
+              containers:
+                - name: listener
+              tolerations:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoSchedule
+          # Modèle Docker-in-Docker du chart (containerMode dind), écrit en
+          # entier pour : épingler les images (le chart utilise :latest) et
+          # faire approuver la CA interne par dockerd, pour pousser vers le
+          # registre https://192.168.1.242.
+          template:
+            spec:
+              initContainers:
+                - name: init-dind-externals
+                  image: ghcr.io/actions/actions-runner:2.338.0
+                  command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+                  volumeMounts:
+                    - name: dind-externals
+                      mountPath: /home/runner/tmpDir
+                - name: dind
+                  image: docker:29.9.0-dind
+                  args:
+                    - dockerd
+                    - --host=unix:///var/run/docker.sock
+                    - --group=$(DOCKER_GROUP_GID)
+                  env:
+                    - name: DOCKER_GROUP_GID
+                      value: "123"
+                  securityContext:
+                    privileged: true
+                  restartPolicy: Always
+                  startupProbe:
+                    exec:
+                      command: ["docker", "info"]
+                    initialDelaySeconds: 0
+                    failureThreshold: 24
+                    periodSeconds: 5
+                  volumeMounts:
+                    - name: work
+                      mountPath: /home/runner/_work
+                    - name: dind-sock
+                      mountPath: /var/run
+                    - name: dind-externals
+                      mountPath: /home/runner/externals
+                    # dockerd fait confiance à cette CA pour ce seul registre.
+                    - name: homelab-ca
+                      mountPath: /etc/docker/certs.d/192.168.1.242/ca.crt
+                      subPath: ca.crt
+              containers:
+                - name: runner
+                  image: ghcr.io/actions/actions-runner:2.338.0
+                  command: ["/home/runner/run.sh"]
+                  env:
+                    - name: DOCKER_HOST
+                      value: unix:///var/run/docker.sock
+                    - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
+                      value: "120"
+                  volumeMounts:
+                    - name: work
+                      mountPath: /home/runner/_work
+                    - name: dind-sock
+                      mountPath: /var/run
+              tolerations:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoSchedule
+              volumes:
+                - name: work
+                  emptyDir: {}
+                - name: dind-sock
+                  emptyDir: {}
+                - name: dind-externals
+                  emptyDir: {}
+                - name: homelab-ca
+                  configMap:
+                    name: homelab-ca
+    # GitHub App, CA interne, politique réseau.
+    - repoURL: https://github.com/cybermimic/iac.git
+      targetRevision: main
+      path: features/delivery/actions-runners/gitops/inner-riddle
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-runners
+  syncPolicy:
+    automated:
+      selfHeal: true
+      # Pas de prune (ADR-008).
+    syncOptions:
+      - CreateNamespace=true

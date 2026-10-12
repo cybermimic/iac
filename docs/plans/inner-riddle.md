@@ -236,11 +236,13 @@ jetons acceptés à ceux émis pour Vault.
   NucBox) ; installer la CA sur le poste qui testera un premier `docker
   push`.
 
-### 6. Runners ARC
+### 6. Runners ARC — code livré (2026-10-13), attend la GitHub App
 
-- 🤖 `delivery/actions-runners` (ArgoCD) : contrôleur ARC + scale set
-  `inner-riddle`, libellé `homelab`, DinD, `minRunners: 0`,
-  `maxRunners: 1`, CA interne approuvée par le Docker du runner.
+- ✅ `delivery/actions-runners` (ArgoCD) : contrôleur ARC 0.15.0 + scale
+  set `homelab` pour `cybermimic/inner-riddle`, DinD (images épinglées :
+  runner 2.338.0, docker 29.9.0-dind), `minRunners: 0`, `maxRunners: 1`,
+  CA interne approuvée par dockerd pour `192.168.1.242`, `NetworkPolicy`
+  (sorties : DNS, registre, Internet).
 - 👤 Créer la **GitHub App** de l'organisation : GitHub → organisation
   `cybermimic` → Settings → Developer settings → GitHub Apps → New GitHub
   App :

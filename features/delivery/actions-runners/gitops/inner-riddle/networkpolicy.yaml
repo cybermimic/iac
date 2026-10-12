@@ -1,0 +1,38 @@
+# Les runners exécutent le code des workflows : on limite ce qu'ils peuvent
+# joindre (ADR-011). Sorties autorisées : DNS du cluster, le registre, et
+# Internet (GitHub, images). Tout le LAN et le reste du cluster sont exclus.
+# Aucune entrée.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: runners-egress
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  egress:
+    # DNS du cluster
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    # Registre Zot (192.168.1.242 → pod, après traduction par kube-proxy)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: registry
+      ports:
+        - { protocol: TCP, port: 5000 }
+    # Internet, hors adresses privées (LAN, pods, services)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16

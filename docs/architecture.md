@@ -62,9 +62,9 @@ single-node.
 | `security/cert-manager` (CA interne) | ✅ Déployé — ClusterIssuer `homelab-ca` |
 | `delivery/argocd` | ✅ Déployé, `https://192.168.1.244`, app-of-apps active ([ADR-008](adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ✅ Déployé (ArgoCD), connecté à Vault |
-| `delivery/registry` (Zot) | ⏳ Livré par ArgoCD, `https://192.168.1.242` |
+| `delivery/registry` (Zot) | ✅ Livré par ArgoCD, `https://192.168.1.242` |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
-| Exposition publique, registre, runners CI | 📋 Décidé, à implémenter ([ADR-009](adr/ADR-009-public-exposure.md)/[010](adr/ADR-010-container-registry.md)/[011](adr/ADR-011-ci-runners.md)) |
+| `delivery/actions-runners` (ARC) | ⏳ Livré par ArgoCD, attend la GitHub App ([ADR-011](adr/ADR-011-ci-runners.md)) |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |
 
 Détail par feature : `features/*/README.md`. Limitations connues et faits

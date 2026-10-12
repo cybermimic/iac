@@ -1,0 +1,36 @@
+# Contrôleur Actions Runner Controller (ADR-011), livré par ArgoCD.
+# Gère les runner scale sets (un par dépôt privé autorisé).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-controller
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/actions/actions-runner-controller-charts # OCI, voir repositories/arc-oci.yaml
+    chart: gha-runner-scale-set-controller
+    targetRevision: 0.15.0 # jamais latest, voir CLAUDE.md
+    helm:
+      releaseName: arc
+      valuesObject:
+        # Nom fixe : les scale sets le référencent (controllerServiceAccount),
+        # ArgoCD ne pouvant pas le découvrir au rendu.
+        serviceAccount:
+          name: arc-controller
+        tolerations:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-systems
+  syncPolicy:
+    automated:
+      selfHeal: true
+      # Pas de prune (ADR-008).
+    syncOptions:
+      - CreateNamespace=true
+      # CRDs ARC volumineuses : même contrainte d'annotation que pour
+      # External Secrets.
+      - ServerSideApply=true
