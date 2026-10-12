@@ -33,8 +33,7 @@ Répondre en **français**. Messages de commit et titres de PR en **anglais**
 Ubuntu 26.04, Kubernetes 1.36.1 (kubeadm), containerd 2.2.2, Calico v3.28.0
 (pods `10.244.0.0/16`),
 Terraform 1.15.x, Vault 2.0.4 (chart `hashicorp/vault`), Traefik v3.7.13
-(chart `traefik/traefik` 41.6.0), CoreDNS LAN 1.14.6 (chart `coredns/coredns`
-1.47.1), cert-manager v1.21.2, MetalLB chart
+(chart `traefik/traefik` 41.6.0), cert-manager v1.21.2, MetalLB chart
 0.14.9, local-path-provisioner v0.0.31, ArgoCD chart `argo/argo-cd` 10.9.2
 (ArgoCD v3.5.3), External Secrets Operator chart `external-secrets` 2.12.0
 (géré par ArgoCD, pas par Terraform — voir ADR-008).

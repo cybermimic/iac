@@ -53,7 +53,7 @@ services par IP.
 | Action | Statut |
 |---|---|
 | Freebox remise en configuration d'origine (DNS = Freebox) | Fait (utilisateur) |
-| Abandon du DNS du LAN : ADR-007 → abandonné, feature `networking/lan-dns` supprimée | En cours |
+| Abandon du DNS du LAN : ADR-007 → abandonné, feature `networking/lan-dns` supprimée | Fait (2026-10-12) |
 | Accès aux services par IP (une IP MetalLB par service) | Prévu |
 | Observabilité + alerte (API Kubernetes, services publiés) | À planifier |
 | Mises à jour automatiques : les documenter (redémarrage de NetworkManager, noyau à redémarrer) | À faire |

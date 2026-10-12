@@ -63,7 +63,7 @@ ADR-008 acceptée, `Application` racine appliquée, app-of-apps active sur
 
 ### 2. Nettoyage DNS et services internes par IP
 
-- 🤖 Supprimer `networking/lan-dns` (`plan` : 3 destructions, prêt).
+- ✅ `networking/lan-dns` supprimée (2026-10-12, 3 ressources détruites).
 - 🤖 Vault sur `https://192.168.1.243` : listener Vault en TLS (certificat
   de la CA interne avec l'IP), `Service` `LoadBalancer` ; retrait de son
   Ingress. Règle au passage la dette « Vault en HTTP dans le cluster ».

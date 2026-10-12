@@ -6,6 +6,14 @@ aujourd'hui** (2026-09-27). Elle ne remplace pas les README des features
 elle relie les morceaux entre eux. À mettre à jour à chaque nouvelle
 feature.
 
+
+> ⚠️ **Page en cours de réécriture (2026-10-12).** Le DNS local
+> (`lan-dns`, `*.homelab.lan`) a été supprimé et Traefik devient l'ingress
+> public ; Vault et ArgoCD migrent vers leurs propres IP (`.243`, `.244`).
+> Les sections ci-dessous décrivent encore l'ancien modèle. Référence à
+> jour : [plan inner-riddle](plans/inner-riddle.md) et
+> [ADR-009](adr/ADR-009-public-exposure.md).
+
 ## 1. Le matériel et le réseau
 
 Une seule machine, `NucBoxG3-Plus` (Ubuntu 26.04, 16 Go RAM), branchée sur

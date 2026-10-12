@@ -45,7 +45,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `security/vault` | ✅ Déployé, initialisé, publié sur `https://vault.homelab.lan` — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress` (Traefik) | ✅ Déployé sur `192.168.1.240`, HTTP → HTTPS, certificats par cert-manager |
-| `networking/lan-dns` (CoreDNS) | ✅ DNS de tout le LAN via la Freebox (`*.homelab.lan` → ingress) — ⚠️ LAN sans DNS si le NucBox est arrêté ([ADR-007](docs/adr/ADR-007-lan-dns.md)) |
+| `networking/lan-dns` (CoreDNS) | 🗑️ Supprimé le 2026-10-12 ([ADR-007](docs/adr/ADR-007-lan-dns.md) abandonné, [incident](docs/incidents/2026-09-28-lan-dns-outage.md)) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
 | `delivery/argocd` | ✅ Déployé (`https://argocd.homelab.lan`), Application racine app-of-apps active ([ADR-008](docs/adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ⏳ Déclaré dans `gitops/apps/` (ArgoCD), ClusterSecretStore en attente de la config Vault opérateur — voir [docs/plans/inner-riddle.md](docs/plans/inner-riddle.md) |

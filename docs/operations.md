@@ -82,18 +82,19 @@ le rechercher comme référence.
   section 3). Après un reboot, les services qui dépendent de Vault ne
   fonctionnent pas tant que cet unseal n'est pas fait.
 
-## DNS du LAN — dépendance au NucBox
+## DNS
 
-Depuis le 2026-09-27, la Freebox distribue le DNS du homelab
-(`networking/lan-dns`, pod sur le NucBox) à **tout le LAN**. NucBox
-arrêté ou pod en panne = plus aucun appareil ne résout de nom. Rollback
-d'urgence (sur la Freebox, depuis n'importe quel appareil connecté en
-tapant `http://192.168.1.254`) : README de `features/networking/lan-dns`,
-section Rollback. Le NucBox lui-même utilise directement la Freebox comme
-DNS (sinon il dépendrait de son propre pod au démarrage) — réglage
-NetworkManager fait à la main le 2026-09-27, désormais décrit par le
-playbook `features/networking/lan-dns/ansible/playbook.yml` (écrit et
-linté, **pas encore exécuté** : nécessite `-K`).
+Pas de DNS local : la Freebox est le DNS de tout le LAN (configuration
+d'origine), les services internes sont joignables **par IP**. Le DNS local
+distribué par la Freebox a existé du 2026-09-27 au 2026-10-12 puis a été
+abandonné ([ADR-007](adr/ADR-007-lan-dns.md),
+[incident](incidents/2026-09-28-lan-dns-outage.md)).
+
+Reliquat sur le NucBox : un réglage NetworkManager fait à la main le
+2026-09-27 lui fait ignorer les DNS annoncés et utiliser `192.168.1.254`
+directement. Sans effet aujourd'hui (c'est la valeur que donne la
+Freebox), à retirer pour revenir à l'état d'origine (`sudo`) :
+`sudo nmcli con mod netplan-enp3s0 ipv4.ignore-auto-dns no ipv4.dns "" ipv6.ignore-auto-dns no && sudo nmcli con up netplan-enp3s0`.
 
 ## Calico
 

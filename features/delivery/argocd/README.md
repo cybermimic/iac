@@ -37,7 +37,6 @@ le secret initial :
 - `networking/ingress` et `security/cert-manager` — publication HTTPS
   (inputs `ingress_class_name` et `cluster_issuer_name`, passés depuis
   leurs outputs dans `infrastructure/environments/homelab/main.tf`).
-- `networking/lan-dns` — résolution de `argocd.homelab.lan` (wildcard).
 - Accès Internet sortant des pods (repo-server clone les repos Git) :
   suppose le réseau des pods hors LAN (voir le runbook Calico).
 
