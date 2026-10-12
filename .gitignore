@@ -23,8 +23,11 @@ kubeconfig*
 !*.env.example
 vault-unseal-keys*
 vault-root-token*
-*-secret.yaml
-*-secrets.yaml
+# Point obligatoire avant "secret(s)" : un tiret aurait aussi matché
+# "external-secrets.yaml" (nom légitime d'une Application ArgoCD), ce qui
+# est arrivé une fois (voir git log) — jamais recommencer ce pattern.
+*.secret.yaml
+*.secrets.yaml
 !*.secret.example.yaml
 
 # SOPS/Age — public keys are fine, never commit private keys
