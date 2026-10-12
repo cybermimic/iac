@@ -49,7 +49,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
 | `delivery/argocd` | ✅ Déployé sur `https://192.168.1.244`, Application racine app-of-apps active ([ADR-008](docs/adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ✅ Déployé par ArgoCD, `ClusterSecretStore` `vault` valide (Vault en TLS sur `192.168.1.243`) |
-| `delivery/registry` (Zot) | ✅ Livré par ArgoCD sur `https://192.168.1.242` ([ADR-010](docs/adr/ADR-010-container-registry.md)) — playbook CA du nœud à lancer |
+| `delivery/registry` (Zot) | ✅ Déployé sur `https://192.168.1.242`, approuvé par containerd ([ADR-010](docs/adr/ADR-010-container-registry.md)) |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ⏳ Livré par ArgoCD (scale set `homelab` pour inner-riddle) — attend la GitHub App ([ADR-011](docs/adr/ADR-011-ci-runners.md)) |
 | Application inner-riddle | ⏳ Déclarée dans ArgoCD (sync manuelle), attend la version `v0.1.0` — [plan inner-riddle](docs/plans/inner-riddle.md) |

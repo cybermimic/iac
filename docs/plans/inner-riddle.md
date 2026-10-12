@@ -222,7 +222,7 @@ jetons acceptés à ceux émis pour Vault.
   domaine : Let's Encrypt est autorisé.
 - 👤 **Ne pas encore** rediriger les ports.
 
-### 5. Registre Zot — code livré (2026-10-13)
+### 5. Registre Zot — ✅ fait (2026-10-13)
 
 - ✅ `delivery/registry` (ArgoCD) : Zot v2.1.22, `https://192.168.1.242`,
   TLS par Zot (certificat CA interne, IP), 20 Gi `local-path`, rétention
@@ -230,11 +230,12 @@ jetons acceptés à ceux émis pour Vault.
   `zot verify`. Playbook Ansible `features/delivery/registry/ansible/`
   (CA dans le magasin de confiance du NucBox + redémarrage de containerd).
   Le pull secret de l'application est livré avec elle (étape 7).
-- 👤 Produire les deux comptes htpasswd (écriture CI, lecture cluster) et
-  les ranger dans Vault (`secret/registry/htpasswd`, `secret/registry/pull`,
-  `secret/registry/push`) ; lancer le playbook (`-K`, `-c local` depuis le
-  NucBox) ; installer la CA sur le poste qui testera un premier `docker
-  push`.
+- ✅ Comptes `ci-push` / `cluster-pull` rangés dans Vault (commandes B),
+  `ExternalSecret` `zot-htpasswd` synchronisé ; accès anonyme et mauvais
+  mot de passe refusés (`401`).
+- ✅ Playbook de confiance de la CA lancé sur le NucBox (`-e
+  ansible_become_exe=sudo.ws` : sudo-rs, voir `bootstrap/README.md`) ;
+  `curl https://192.168.1.242/v2/` sans `--cacert` → `401` (TLS approuvé).
 
 ### 6. Runners ARC — code livré (2026-10-13), attend la GitHub App
 
@@ -270,7 +271,10 @@ jetons acceptés à ceux émis pour Vault.
 
 ### 7. Application inner-riddle — code livré (2026-10-13), attend la version v0.1.0
 
-- 👤 Générer une **clé de déploiement SSH en lecture seule** pour le dépôt
+- ✅ Clé de déploiement en lecture seule ajoutée au dépôt et rangée dans
+  Vault : ArgoCD lit le dépôt (seule erreur restante : l'étiquette
+  `v0.1.0` n'existe pas encore).
+- 👤 (Détail de la procédure, déjà faite) Générer une **clé de déploiement SSH en lecture seule** pour le dépôt
   inner-riddle (GitHub → Settings → Deploy keys), ranger la clé privée dans
   Vault (`secret/argocd/repo-inner-riddle`) ; ranger les comptes de
   l'application dans `secret/inner-riddle/auth`, propriétés `accounts`
