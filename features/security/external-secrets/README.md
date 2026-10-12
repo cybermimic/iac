@@ -103,7 +103,8 @@ ressources : `kubectl -n argocd delete application external-secrets
 
 ## Troubleshooting
 
-- `ClusterSecretStore` en erreur `connection refused` → Vault scellé
+- `ClusterSecretStore` en `InvalidProviderConfig` (`unable to create
+  client`, parfois `connection refused`) → Vault scellé
   (`kubectl -n vault exec vault-0 -- vault status`) : unseal par
   l'opérateur, voir `features/security/vault/README.md`.
 - `ClusterSecretStore` en erreur `permission denied` → le rôle Vault
