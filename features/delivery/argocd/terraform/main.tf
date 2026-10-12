@@ -1,13 +1,11 @@
-# ArgoCD (voir ADR-002) : installé par Terraform, publié sur le LAN en
-# HTTPS via l'ingress avec un certificat de la CA interne.
+# ArgoCD (voir ADR-002, ADR-008) : installé par Terraform, avec l'Application
+# racine (app-of-apps) qui suit gitops/apps/.
 #
-# Première version volontairement minimale : ArgoCD seul, SANS aucune
-# Application. La structure GitOps (quel repo/chemin ArgoCD suit, "app of
-# apps", ce qui bascule de Terraform vers ArgoCD) est une décision à part.
-#
-# - server.insecure : le TLS est terminé par Traefik (comme pour Vault) ;
-#   sans ce réglage, argocd-server redirige lui-même en HTTPS et crée une
-#   boucle derrière l'ingress.
+# Publication (ADR-009) : propre IP LAN (Service LoadBalancer, MetalLB) et
+# TLS terminé par argocd-server lui-même, avec un certificat de la CA
+# interne dans le secret argocd-server-tls (nom attendu par ArgoCD). Pas
+# d'Ingress : Traefik est réservé au public, et cette IP n'est jamais
+# redirigée par la Freebox.
 # - Dex (SSO) et le contrôleur de notifications désactivés : pas de
 #   consommateur pour l'instant (compte admin local uniquement).
 # - Mot de passe admin initial : généré par ArgoCD dans le secret
@@ -35,7 +33,8 @@ resource "helm_release" "argocd" {
   values = [
     yamlencode({
       global = {
-        domain = var.hostname
+        # URL publiée par ArgoCD (liens, callbacks) : l'IP, pas de DNS local.
+        domain = var.load_balancer_ip
         tolerations = var.tolerate_control_plane_taint ? [
           {
             key      = "node-role.kubernetes.io/control-plane"
@@ -53,12 +52,6 @@ resource "helm_release" "argocd" {
         keep    = true
       }
 
-      configs = {
-        params = {
-          "server.insecure" = true
-        }
-      }
-
       dex = {
         enabled = false
       }
@@ -68,18 +61,49 @@ resource "helm_release" "argocd" {
       }
 
       server = {
-        ingress = {
-          enabled          = true
-          ingressClassName = var.ingress_class_name
+        service = {
+          type = "LoadBalancer"
           annotations = {
-            "cert-manager.io/cluster-issuer" = var.cluster_issuer_name
+            "metallb.io/loadBalancerIPs" = var.load_balancer_ip
           }
-          # Certificat dans le secret argocd-server-tls, créé par cert-manager.
-          tls = true
         }
       }
     })
   ]
+}
+
+# Certificat d'argocd-server, signé par la CA interne. Uniquement l'IP : la
+# CA ne peut signer que des noms DNS sous homelab.lan (name constraint).
+# Créé après la release (depends_on) : la mise à jour de la release retire
+# l'ancien Ingress, dont le certificat visait le même secret.
+resource "kubernetes_manifest" "server_tls" {
+  depends_on = [helm_release.argocd]
+
+  manifest = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "argocd-server"
+      namespace = kubernetes_namespace.argocd.metadata[0].name
+    }
+    spec = {
+      # Nom de secret imposé : argocd-server le relit à chaud.
+      secretName  = "argocd-server-tls"
+      ipAddresses = [var.load_balancer_ip]
+      issuerRef = {
+        group = "cert-manager.io"
+        kind  = "ClusterIssuer"
+        name  = var.cluster_issuer_name
+      }
+    }
+  }
+
+  wait {
+    condition {
+      type   = "Ready"
+      status = "True"
+    }
+  }
 }
 
 # App-of-apps (ADR-008) : seule Application créée par Terraform. Elle suit

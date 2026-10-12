@@ -6,7 +6,8 @@
 homelab, signés par une **CA interne** propre au homelab (voir
 [ADR-006](../../../docs/adr/ADR-006-ingress-and-internal-tls.md)). Une
 fois le certificat de la CA importé sur un poste, tout
-`https://<service>.homelab.lan` y est reconnu sans avertissement.
+service interne (`https://192.168.1.243:8200`, `https://192.168.1.244`…)
+y est reconnu sans avertissement.
 
 ## Ce que la feature installe
 
@@ -80,20 +81,30 @@ kubectl -n cert-manager get certificate homelab-root-ca   # READY True
 
 ## Obtenir un certificat pour un service
 
-Sur un `Ingress` servi par Traefik :
+Les services internes ont chacun leur IP et terminent eux-mêmes leur TLS
+([ADR-009](../../../docs/adr/ADR-009-public-exposure.md)) : un
+`Certificate` avec **uniquement des IP**, exemple de Vault :
 
 ```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
-  annotations:
-    cert-manager.io/cluster-issuer: homelab-ca
+  name: vault-listener-tls
+  namespace: vault
 spec:
-  tls:
-    - hosts: [vault.homelab.lan]
-      secretName: vault-tls
+  secretName: vault-listener-tls
+  ipAddresses: [192.168.1.243, 127.0.0.1]
+  issuerRef: {group: cert-manager.io, kind: ClusterIssuer, name: homelab-ca}
 ```
 
-cert-manager crée le secret `vault-tls` et le renouvelle seul (par défaut
-90 jours de validité, renouvelé aux 2/3).
+Pas de nom DNS hors `homelab.lan` (ni nom de Service Kubernetes
+`*.svc`) : la contrainte de nom de la CA rendrait le certificat invalide
+pour tout client qui vérifie la chaîne. Les IP, elles, ne sont pas
+contraintes (vérifié avec OpenSSL et Chrome). cert-manager crée le secret
+et le renouvelle seul (90 jours de validité, renouvelé aux 2/3).
+
+Les applications **publiques** n'utilisent pas cette CA mais Let's Encrypt
+(étape 4 du [plan inner-riddle](../../../docs/plans/inner-riddle.md)).
 
 ## Installer la CA sur les postes
 

@@ -4,5 +4,5 @@ output "namespace" {
 
 output "url" {
   description = "URL d'ArgoCD sur le LAN"
-  value       = "https://${var.hostname}"
+  value       = "https://${var.load_balancer_ip}"
 }

@@ -14,10 +14,14 @@ dossier, sans nouveau `terraform apply`.
 
 ## Accès
 
-**`https://argocd.homelab.lan`**, depuis tout le LAN, via l'ingress
-Traefik avec un certificat de la CA interne (secret `argocd-server-tls`,
-renouvelé par cert-manager). TLS terminé par Traefik
-(`server.insecure = true` côté ArgoCD, sinon boucle de redirection).
+**`https://192.168.1.244`**, depuis tout le LAN
+([ADR-009](../../../docs/adr/ADR-009-public-exposure.md) : une IP par
+service interne, jamais redirigée par la Freebox). `Service`
+`LoadBalancer` (MetalLB) ; TLS terminé par **argocd-server lui-même** avec
+un certificat de la CA interne (Certificate `argocd-server` → secret
+`argocd-server-tls`, nom imposé par ArgoCD, renouvelé par cert-manager).
+Le certificat ne contient que l'IP (la CA ne peut signer que des noms DNS
+sous `homelab.lan`). `http://` redirige vers `https://`.
 
 Compte : `admin` (local ; Dex/SSO désactivé). Mot de passe initial généré
 par ArgoCD dans le secret `argocd-initial-admin-secret` — **à lire par
@@ -34,9 +38,10 @@ le secret initial :
 
 ## Dépendances
 
-- `networking/ingress` et `security/cert-manager` — publication HTTPS
-  (inputs `ingress_class_name` et `cluster_issuer_name`, passés depuis
-  leurs outputs dans `infrastructure/environments/homelab/main.tf`).
+- `networking/metallb` — IP `load_balancer_ip` (`depends_on` commenté
+  dans `infrastructure/environments/homelab/main.tf`).
+- `security/cert-manager` — certificat d'argocd-server (input
+  `cluster_issuer_name`, passé depuis son output).
 - Accès Internet sortant des pods (repo-server clone les repos Git) :
   suppose le réseau des pods hors LAN (voir le runbook Calico).
 
@@ -53,8 +58,7 @@ est un cache).
 |---|---|---|
 | `namespace` | Namespace d'installation | `argocd` |
 | `chart_version` | Version du chart `argo/argo-cd` | `10.9.2` (ArgoCD v3.5.3) |
-| `hostname` | Nom publié | — (requis, `argocd.homelab.lan` au niveau env) |
-| `ingress_class_name` | IngressClass | — (requis, output de `networking/ingress`) |
+| `load_balancer_ip` | IP LAN d'ArgoCD (plage MetalLB) | — (requis, `192.168.1.244` au niveau env) |
 | `cluster_issuer_name` | ClusterIssuer du certificat | — (requis, output de `security/cert-manager`) |
 | `tolerate_control_plane_taint` | Toleration control-plane pour tous les pods (single-node) | `true` |
 | `root_app_repo_url` | Repo suivi par l'Application racine | `https://github.com/cybermimic/iac.git` |
@@ -74,12 +78,12 @@ Vérification :
 
 ```bash
 kubectl -n argocd get pods                          # tous Running
-kubectl -n argocd get ingress,certificate           # certificat READY True
+kubectl -n argocd get svc argocd-server,certificate # EXTERNAL-IP 192.168.1.244, certificat READY True
 kubectl -n argocd get application root              # Synced, Healthy
 ```
 
 puis, depuis un poste du LAN où la CA est installée :
-`https://argocd.homelab.lan` → écran de connexion, sans avertissement.
+`https://192.168.1.244` → écran de connexion, sans avertissement.
 
 ## Upgrade
 
@@ -94,8 +98,11 @@ Applications) sont conservées (`crds.keep = true`).
 
 ## Troubleshooting
 
-- Boucle de redirection / `ERR_TOO_MANY_REDIRECTS` → `server.insecure`
-  n'est pas actif (le TLS doit être terminé par Traefik seul).
+- Le navigateur reçoit un certificat qui ne correspond pas au secret
+  `argocd-server-tls` (ex. ancien certificat après un changement) →
+  argocd-server ne l'a pas rechargé : `kubectl -n argocd rollout restart
+  deploy/argocd-server` (constaté lors de la migration du 2026-10-12, le
+  certificat ayant été émis juste après le démarrage du pod).
 - Application en `ComparisonError` / repo inaccessible → vérifier
   l'accès sortant des pods (`kubectl -n argocd logs deploy/argocd-repo-server`).
 - Mot de passe admin perdu : le réinitialiser en suivant la procédure

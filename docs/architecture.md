@@ -57,10 +57,10 @@ single-node.
 | `networking/metallb` | ✅ Déployé |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé, initialisé, `https://192.168.1.243:8200` (TLS de bout en bout) — unseal manuel (humain) après chaque redémarrage |
-| `networking/ingress` (Traefik, [ADR-006](adr/ADR-006-ingress-and-internal-tls.md)) | ✅ Déployé — HTTP → HTTPS, certificats par cert-manager |
+| `networking/ingress` (Traefik) | ✅ Déployé — à convertir en ingress public ([ADR-009](adr/ADR-009-public-exposure.md)) |
 | `networking/lan-dns` | 🗑️ Supprimé le 2026-10-12 ([ADR-007](adr/ADR-007-lan-dns.md) abandonné) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — ClusterIssuer `homelab-ca` |
-| `delivery/argocd` | ✅ Déployé, app-of-apps active ([ADR-008](adr/ADR-008-gitops-layout.md)) |
+| `delivery/argocd` | ✅ Déployé, `https://192.168.1.244`, app-of-apps active ([ADR-008](adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ✅ Déployé (ArgoCD), connecté à Vault |
 | `observability/*`, `storage/object-storage`, `delivery/registry`, `ai/*` | ❌ Pas commencé |
 | Exposition publique, registre, runners CI | 📋 Décidé, à implémenter ([ADR-009](adr/ADR-009-public-exposure.md)/[010](adr/ADR-010-container-registry.md)/[011](adr/ADR-011-ci-runners.md)) |

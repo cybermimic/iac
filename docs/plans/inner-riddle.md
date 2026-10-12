@@ -61,23 +61,23 @@ l'opérateur (secrets, comptes externes, réseau, sudo).
 ADR-008 acceptée, `Application` racine appliquée, app-of-apps active sur
 `gitops/apps/`.
 
-### 2. Nettoyage DNS et services internes par IP
+### 2. Nettoyage DNS et services internes par IP — ✅ fait (2026-10-12)
 
 - ✅ `networking/lan-dns` supprimée (2026-10-12, 3 ressources détruites).
 - ✅ Vault sur `https://192.168.1.243:8200` (2026-10-12) : listener en TLS
   (certificat CA interne, IP uniquement), `Service` `LoadBalancer`, Ingress
   retiré ; `ClusterSecretStore` d'External Secrets repointé. Règle la dette
   « Vault en HTTP dans le cluster ».
-- 🤖 ArgoCD sur `https://192.168.1.244` : TLS par argocd-server lui-même
-  (`server.insecure` retiré), `Service` `LoadBalancer` ; retrait de son
-  Ingress.
+- ✅ ArgoCD sur `https://192.168.1.244` (2026-10-12) : TLS par
+  argocd-server (`server.insecure` retiré), `Service` `LoadBalancer`,
+  Ingress retiré.
 - ✅ Certificat de la CA interne contenant une IP : accepté malgré la
   contrainte de nom de la CA (elle ne porte que sur les noms DNS ; les IP
-  ne sont pas contraintes) — vérifié avec OpenSSL, reste à voir dans le
-  navigateur. Durcissement possible plus tard : limiter aussi les IP à la
+  ne sont pas contraintes) — vérifié avec OpenSSL et dans Chrome
+  (Windows) pour Vault et ArgoCD. Durcissement possible plus tard : limiter aussi les IP à la
   plage MetalLB dans la CA (son certificat change alors, à réinstaller une
   fois sur les postes).
-- 👤 Unseal de Vault après son redémarrage (changement de listener).
+- ✅ Unseal de Vault après son redémarrage (fait).
 
 ### 3. External Secrets — ✅ fait (2026-10-12)
 

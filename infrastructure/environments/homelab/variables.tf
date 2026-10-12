@@ -27,3 +27,8 @@ variable "vault_load_balancer_ip" {
   description = "IP LAN fixe de Vault (ex: 192.168.1.243), dans la plage metallb_ip_range (ADR-009). Vault : https://<ip>:8200."
   type        = string
 }
+
+variable "argocd_load_balancer_ip" {
+  description = "IP LAN fixe d'ArgoCD (ex: 192.168.1.244), dans la plage metallb_ip_range (ADR-009). ArgoCD : https://<ip>."
+  type        = string
+}

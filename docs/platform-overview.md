@@ -1,24 +1,18 @@
 # Vue d'ensemble — ce qui tourne et comment ça s'articule
 
 Page d'explication de la plateforme **telle qu'elle est configurée
-aujourd'hui** (2026-09-27). Elle ne remplace pas les README des features
+aujourd'hui** (2026-10-12). Elle ne remplace pas les README des features
 (détail, upgrade, rollback, troubleshooting) ni les ADR (le pourquoi) :
 elle relie les morceaux entre eux. À mettre à jour à chaque nouvelle
 feature.
 
-
-> ⚠️ **Page en cours de réécriture (2026-10-12).** Le DNS local
-> (`lan-dns`, `*.homelab.lan`) a été supprimé et Traefik devient l'ingress
-> public ; Vault et ArgoCD migrent vers leurs propres IP (`.243`, `.244`).
-> Les sections ci-dessous décrivent encore l'ancien modèle. Référence à
-> jour : [plan inner-riddle](plans/inner-riddle.md) et
-> [ADR-009](adr/ADR-009-public-exposure.md).
-
 ## 1. Le matériel et le réseau
 
 Une seule machine, `NucBoxG3-Plus` (Ubuntu 26.04, 16 Go RAM), branchée sur
-le LAN d'une Freebox Pop (Freebox OS 4.13), qui fait routeur, DHCP et DNS
-amont.
+le LAN d'une Freebox Pop (Freebox OS 4.13), qui fait routeur, DHCP et DNS.
+**Pas de DNS local** : les services internes s'ouvrent **par leur IP**
+([ADR-007](adr/ADR-007-lan-dns.md) abandonné,
+[ADR-009](adr/ADR-009-public-exposure.md)).
 
 ### Plan d'adressage
 
@@ -27,49 +21,60 @@ amont.
 | `192.168.1.0/24` | LAN domestique | Freebox |
 | `192.168.1.2` – `.200` | Adresses distribuées par le DHCP de la Freebox | Freebox → DHCP |
 | `192.168.1.253` | NucBox (bail DHCP **statique**) | Freebox → DHCP → Baux statiques |
-| `2a01:e0a:818:4440:e251:d8ff:fe1c:4928` | IPv6 globale du NucBox (stable : dérivée de sa carte réseau + préfixe fixe de la ligne Free) | Automatique (SLAAC) |
-| `192.168.1.254` | Freebox (passerelle, DNS amont) | — |
+| `192.168.1.254` | Freebox (passerelle, DNS de tout le LAN) | — |
 | `192.168.1.240` – `.250` | Réservé à MetalLB (IP des Services `LoadBalancer`), **hors** plage DHCP | Terraform (`metallb_ip_range`) |
-| `192.168.1.240` | Ingress Traefik — porte d'entrée HTTP(S) de tous les services | Terraform (`ingress_load_balancer_ip`) |
-| `192.168.1.241` – `.250` | Libres | — |
+| `192.168.1.240` | Traefik — futur ingress **public** (seule IP qui sera redirigée depuis Internet) ; ne sert rien aujourd'hui | Terraform (`ingress_load_balancer_ip`) |
+| `192.168.1.241` | Libre | — |
+| `192.168.1.242` | Registre Zot (prévu, [ADR-010](adr/ADR-010-container-registry.md)) | — |
+| `192.168.1.243` | **Vault** — `https://192.168.1.243:8200` | Terraform (`vault_load_balancer_ip`) |
+| `192.168.1.244` | **ArgoCD** — `https://192.168.1.244` | Terraform (`argocd_load_balancer_ip`) |
+| `192.168.1.245` – `.250` | Services internes futurs | — |
 | `10.244.0.0/16` | IP des pods (Calico) — invisibles depuis le LAN | Calico (voir [runbook](runbooks/calico-pod-cidr-migration.md)) |
 | `10.96.0.0/12` | IP internes des Services Kubernetes (`ClusterIP`) | kubeadm |
 
-Règle à retenir : **rien de Kubernetes ne doit chevaucher le LAN**. C'était
-le cas au départ (pods en `192.168.0.0/16`) et ça coupait les pods du LAN
-— corrigé, voir le runbook.
+Règles à retenir :
+
+- **Rien de Kubernetes ne doit chevaucher le LAN** (c'était le cas au
+  départ, pods en `192.168.0.0/16` : voir le runbook Calico).
+- **Une IP par service interne**, qui termine lui-même son TLS ; **seule
+  `192.168.1.240` (Traefik) sera un jour redirigée par la Freebox** : un
+  service interne n'est donc jamais joignable depuis Internet, quelle que
+  soit la configuration de Traefik.
 
 ## 2. Le chemin d'une requête
 
-Exemple : un navigateur du LAN ouvre `https://vault.homelab.lan`.
+### Vers un service interne (aujourd'hui)
+
+Exemple : un navigateur du LAN ouvre `https://192.168.1.243:8200` (Vault).
 
 ```
- Navigateur (PC, téléphone…)
+ Navigateur (poste du LAN, CA « Homelab Root CA » installée)
    │
-   │ 1. « Quelle est l'IP de vault.homelab.lan ? »
-   │    (le DNS lui a été donné par le DHCP / l'IPv6 de la Freebox)
+   │ 1. connexion TCP vers 192.168.1.243:8200
    ▼
- DNS du homelab — pod lan-dns (CoreDNS), sur 192.168.1.253:53
-   │    *.homelab.lan  → répond 192.168.1.240 (wildcard, aucun nom à déclarer)
-   │    tout le reste  → transmis à la Freebox (192.168.1.254)
-   │
-   │ 2. connexion HTTP(S) vers 192.168.1.240
-   ▼
- MetalLB (speaker) — répond en ARP « 192.168.1.240, c'est le NucBox »
+ MetalLB (speaker) — répond en ARP « 192.168.1.243, c'est le NucBox »
    │
    ▼
- Traefik (pod, namespace traefik) — lit le nom demandé (Host / SNI)
-   │    et choisit le service correspondant (Ingress / IngressRoute)
+ Service Kubernetes vault (LoadBalancer) → pod vault-0
    │
+   │ 2. TLS terminé par Vault lui-même : certificat signé par la CA
+   │    interne, contenant l'IP 192.168.1.243
    ▼
- Service Kubernetes → pod de l'application (ex. vault-0)
+ Vault (UI sous /ui/, API sous /v1/)
 ```
 
-État actuel de cette chaîne : les étapes DNS → MetalLB → Traefik
-fonctionnent de bout en bout depuis tout le LAN : `https://vault.homelab.lan`
-est servi par Traefik avec un certificat de la CA interne (reconnu sans
-avertissement sur les postes où la CA est installée), et `http://`
-redirige vers `https://`. Un nom sans service associé répond `404`.
+Même schéma pour ArgoCD (`https://192.168.1.244`, TLS par argocd-server).
+
+### Vers une application publique (prévu, inner-riddle)
+
+```
+ Internet → inner-riddle.cybermimic.com (DNS chez OVH → IP publique de la ligne)
+   → Freebox : redirection 80/443 → 192.168.1.240
+   → Traefik (classe non par défaut, namespaces autorisés seulement)
+   → certificat Let's Encrypt → Service → pods inner-riddle
+```
+
+Étapes et état : [plan inner-riddle](plans/inner-riddle.md).
 
 ## 3. Les composants
 
@@ -77,71 +82,71 @@ redirige vers `https://`. Un nom sans service associé répond `404`.
 |---|---|---|---|---|
 | Kubernetes 1.36 (kubeadm), containerd, Calico v3.28 | Le cluster lui-même, single-node | `kube-system` | Installation manuelle initiale (playbook `bootstrap/` écrit mais jamais exécuté) | [bootstrap](../bootstrap/README.md) |
 | MetalLB | Donne des IP du LAN aux Services `LoadBalancer` et les annonce en ARP | `metallb-system` | Terraform | [networking/metallb](../features/networking/metallb/README.md) |
-| local-path-provisioner | Volumes persistants sur le disque du NucBox (StorageClass par défaut `local-path`, fichiers sous `/opt/local-path-provisioner`) | `local-path-storage` | Terraform | [storage/local-path](../features/storage/local-path/README.md) |
-| Vault | Coffre à secrets (initialisé, 1 Gi de données sur `local-path`), publié sur `https://vault.homelab.lan` | `vault` | Terraform (serveur) + humain (init / unseal) | [security/vault](../features/security/vault/README.md) |
-| Traefik | Ingress : porte d'entrée HTTP(S) unique, `192.168.1.240` | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
-| CoreDNS « lan-dns » | DNS de tout le LAN (`*.homelab.lan` + relais vers la Freebox) | `lan-dns` | Terraform + réglages Freebox | [networking/lan-dns](../features/networking/lan-dns/README.md) |
-| cert-manager + CA interne | Émet et renouvelle les certificats TLS des services, signés par « Homelab Root CA » (limitée à `homelab.lan`, [certificat public](homelab-root-ca.crt) à installer sur les postes) | `cert-manager` | Terraform | [security/cert-manager](../features/security/cert-manager/README.md) |
+| local-path-provisioner | Volumes persistants sur le disque du NucBox (StorageClass par défaut `local-path`) | `local-path-storage` | Terraform | [storage/local-path](../features/storage/local-path/README.md) |
+| cert-manager + CA interne | Émet et renouvelle les certificats TLS des services internes, signés par « Homelab Root CA » ([certificat public](homelab-root-ca.crt) à installer sur les postes) | `cert-manager` | Terraform | [security/cert-manager](../features/security/cert-manager/README.md) |
+| Vault | Coffre à secrets, `https://192.168.1.243:8200`, TLS de bout en bout | `vault` | Terraform (serveur) + humain (init / unseal / configuration) | [security/vault](../features/security/vault/README.md) |
+| ArgoCD | GitOps, `https://192.168.1.244` ; Application racine qui suit `gitops/apps/` ([ADR-008](adr/ADR-008-gitops-layout.md)) | `argocd` | Terraform | [delivery/argocd](../features/delivery/argocd/README.md) |
+| External Secrets | Pont Vault → Secrets Kubernetes (`ClusterSecretStore` `vault`) | `external-secrets` | **ArgoCD** | [security/external-secrets](../features/security/external-secrets/README.md) |
+| Traefik | Ingress — à convertir en ingress **public** ; ne sert aucun service aujourd'hui | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
 
 Les pods « système » (apiserver, etcd, calico-node, kube-proxy, speaker
-MetalLB, lan-dns) utilisent directement le réseau du NucBox
-(`hostNetwork`) ; les autres ont une IP en `10.244.x.x`.
+MetalLB) utilisent directement le réseau du NucBox (`hostNetwork`) ; les
+autres ont une IP en `10.244.x.x`.
 
 ## 4. Où est configuré quoi
 
-La plateforme n'est pas entièrement dans Terraform. Il y a quatre
-endroits, à connaître avant de modifier quoi que ce soit :
-
 | Endroit | Contenu | Comment on le change |
 |---|---|---|
-| **Ce repo → Terraform** (`infrastructure/environments/homelab` + `features/*/terraform`) | Tout ce qui tourne dans Kubernetes au-dessus du socle : MetalLB, local-path, Vault, Traefik, lan-dns | Modifier le repo → synchroniser vers le répertoire d'état → `plan` → `apply` (voir [operations.md](operations.md)) |
-| **Répertoire d'état** `/home/hoarauv/.homelab-platform-state/` sur le NucBox | Le `terraform.tfstate` qui fait autorité + `terraform.tfvars` (valeurs propres au réseau : plages IP, adresses du DNS) | Jamais à la main, sauf `terraform.tfvars` ([ADR-005](adr/ADR-005-terraform-state.md)) |
-| **La Freebox** (`http://192.168.1.254`) | Plage DHCP, bail statique du NucBox, DNS distribués (IPv4 : `192.168.1.253` ; IPv6 forcé : IPv6 du NucBox) | Interface web Freebox OS, mode avancé — documenté dans [lan-dns](../features/networking/lan-dns/README.md) |
-| **Le NucBox (hôte)** | Paquets Kubernetes/containerd, réseau Calico, DNS propre du NucBox (utilise directement la Freebox, NetworkManager) | Ansible ([ADR-001](adr/ADR-001-terraform-scope.md)) : `bootstrap/ansible` (paquets) et `features/*/ansible` (ex. DNS propre du NucBox) — playbooks écrits mais **jamais exécutés**, l'état actuel a été fait à la main |
+| **Ce repo → Terraform** (`infrastructure/environments/homelab` + `features/*/terraform`) | Le socle : MetalLB, local-path, cert-manager, Vault, ArgoCD (+ Application racine), Traefik | Modifier le repo → synchroniser vers le répertoire d'état → `plan` → `apply` (voir [operations.md](operations.md)) |
+| **Ce repo → ArgoCD** (`gitops/apps/` + `features/*/gitops`) | Tout ce qui est nouveau depuis l'ADR-008 : External Secrets, puis registre, runners, applications | Commit sur `main` : ArgoCD synchronise (automatique pour la plateforme, manuel pour les applications business) |
+| **Répertoire d'état** `/home/hoarauv/.homelab-platform-state/` sur le NucBox | Le `terraform.tfstate` qui fait autorité + `terraform.tfvars` (plages IP, IP des services) | Jamais à la main, sauf `terraform.tfvars` ([ADR-005](adr/ADR-005-terraform-state.md)) |
+| **Vault** (configuration interne) | Moteur `secret/` (kv-v2), authentification `kubernetes`, politiques, rôle `external-secrets` | Par l'humain, CLI du pod (`kubectl -n vault exec -it vault-0 -- sh`) |
+| **La Freebox** (`http://192.168.1.254`) | Plage DHCP, bail statique du NucBox ; plus tard la redirection 80/443 → `.240` | Interface web Freebox OS, mode avancé |
+| **OVH** (DNS de `cybermimic.com`) | `inner-riddle.cybermimic.com` → IP publique de la ligne | Espace client OVH |
+| **Le NucBox (hôte)** | Paquets Kubernetes/containerd, réseau Calico | Ansible ([ADR-001](adr/ADR-001-terraform-scope.md)) : `bootstrap/ansible` — écrit mais **jamais exécuté**, l'état actuel a été fait à la main |
 
-Et ce qui n'est **jamais** dans le repo : les clés d'unseal et le root
-token Vault (chez l'opérateur humain), le kubeconfig, tout secret
+Ce qui n'est **jamais** dans le repo : les clés d'unseal et le root token
+Vault (chez l'opérateur humain), le kubeconfig, tout secret
 ([ADR-003](adr/ADR-003-secret-management.md)).
 
 ## 5. Dépendances entre les briques
 
 ```
-MetalLB ──► Traefik (IP .240) ──► lan-dns (le wildcard pointe vers Traefik)
-                  │
-                  └──► services en HTTPS (Vault…) ◄── cert-manager (CA interne)
+MetalLB ──► IP LAN de Vault (.243), ArgoCD (.244), Traefik (.240)
+cert-manager (CA interne) ──► certificats de Vault et d'ArgoCD
 local-path ──► Vault (volume de données)
-Freebox (DHCP/DNS) ──► lan-dns ──► tout le LAN
+ArgoCD ──► External Secrets ──► Vault (https://192.168.1.243:8200)
 ```
 
 Elles sont explicites dans `infrastructure/environments/homelab/main.tf`
-(passage d'outputs en inputs, ou `depends_on` commenté).
+(passage d'outputs en inputs, ou `depends_on` commenté) et dans les
+README des features.
 
 ## 6. Ce qu'il faut savoir au quotidien
 
-- **Après un redémarrage du NucBox** :
-  1. le LAN n'a **pas de DNS** tant que le pod `lan-dns` n'est pas relancé
-     (en général moins d'une minute après le démarrage de Kubernetes) ;
-  2. **Vault est scellé** : faire l'unseal (3 clés sur 5) — voir
-     [security/vault](../features/security/vault/README.md), section 3.
-- **NucBox en panne durable** : rendre le DNS à la Freebox (Rollback
-  d'urgence de [lan-dns](../features/networking/lan-dns/README.md)), sinon
-  plus aucun appareil ne navigue.
+- **Après un redémarrage du NucBox** : **Vault est scellé** → unseal
+  manuel (3 clés sur 5), voir [security/vault](../features/security/vault/README.md),
+  section 3. Tant qu'il est scellé, External Secrets ne peut rien lire.
 - **Vérifier depuis un autre poste du LAN**, jamais seulement depuis le
   NucBox : une IP MetalLB répond toujours depuis le nœud lui-même, même
   quand elle est injoignable du reste du réseau (piège déjà rencontré).
 - **Avant tout changement Terraform** : `plan` depuis le répertoire d'état,
   jamais d'`apply` sans l'avoir lu ([operations.md](operations.md)).
+- **Mises à jour automatiques d'Ubuntu** (`unattended-upgrades`, vers
+  6h30) : elles peuvent redémarrer NetworkManager (vu le 2026-09-28) ;
+  les mises à jour du noyau attendent un redémarrage manuel.
 
 ## 7. Ressources consommées (ordre de grandeur)
 
-Environ 2,5-3 Go de RAM utilisés sur 16 Go (Kubernetes lui-même compris).
-Les features ajoutées jusqu'ici pèsent peu : MetalLB ~50 Mi, local-path
-~30 Mi, Vault 128-512 Mi, Traefik ~50-100 Mi, lan-dns ~30 Mi.
+Environ 3 Go de RAM utilisés sur 16 Go (Kubernetes lui-même compris).
+Mesures des features (2026-09-27 / 2026-10-12) : MetalLB ~70 Mi,
+local-path ~10 Mi, Vault ~30 Mi, Traefik ~20 Mi, cert-manager ~50 Mi,
+ArgoCD ~120 Mi (à vide). ~11 Gi restent disponibles.
 
 ## 8. Dette connue
 
-Tenue à jour dans [operations.md](operations.md) (sections « Limitations
-connues », « DNS du LAN », « Calico ») : pas de backend Terraform distant, bootstrap Ansible jamais
-exécuté, TLS de Vault terminé à l'ingress (HTTP dans le cluster), playbook DNS du NucBox
-(lan-dns) écrit mais pas encore exécuté, incohérence volontaire du `cluster-cidr` (Calico), clé SSH
-partagée GitHub/NucBox.
+Tenue à jour dans [operations.md](operations.md) (« Limitations connues »,
+« DNS », « Calico ») : pas de backend Terraform distant, bootstrap Ansible
+jamais exécuté, unseal Vault manuel, incohérence volontaire du
+`cluster-cidr` (Calico), clé SSH partagée GitHub/NucBox, pas de
+surveillance ni d'alerte.

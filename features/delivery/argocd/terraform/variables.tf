@@ -10,18 +10,13 @@ variable "chart_version" {
   default     = "10.9.2"
 }
 
-variable "hostname" {
-  description = "Nom DNS sous lequel ArgoCD est publié (ex: argocd.homelab.lan)"
-  type        = string
-}
-
-variable "ingress_class_name" {
-  description = "IngressClass à utiliser (output de networking/ingress)"
+variable "load_balancer_ip" {
+  description = "IP LAN fixe d'ArgoCD (Service LoadBalancer, plage MetalLB). ArgoCD : https://<ip>."
   type        = string
 }
 
 variable "cluster_issuer_name" {
-  description = "ClusterIssuer cert-manager qui signe le certificat (output de security/cert-manager)"
+  description = "ClusterIssuer cert-manager qui signe le certificat d'argocd-server (output de security/cert-manager)"
   type        = string
 }
 

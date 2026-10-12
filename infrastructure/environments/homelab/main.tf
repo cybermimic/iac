@@ -40,9 +40,9 @@ module "cert_manager" {
 module "argocd" {
   source = "../../../features/delivery/argocd/terraform"
 
-  # Publication HTTPS : dépendances explicites sur l'ingress et la CA via
-  # leurs outputs.
-  hostname            = "argocd.${var.homelab_domain}"
-  ingress_class_name  = module.ingress.ingress_class_name
+  # Propre IP LAN + TLS par argocd-server (ADR-009) : dépendances
+  # explicites sur MetalLB (IP) et la CA interne (certificat).
+  load_balancer_ip    = var.argocd_load_balancer_ip
   cluster_issuer_name = module.cert_manager.cluster_issuer_name
+  depends_on          = [module.metallb]
 }

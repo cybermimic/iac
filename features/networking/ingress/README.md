@@ -13,8 +13,10 @@ qu'avec une IP LoadBalancer chacun. Choix et alternatives :
 - `networking/metallb` — fournit l'IP du Service `LoadBalancer`
   (`depends_on` explicite dans `infrastructure/environments/homelab/main.tf`).
 
-Features qui en dépendent : toute feature publiée sur le LAN (aujourd'hui
-`security/vault`), avec ses certificats fournis par `security/cert-manager`.
+Aucun service ne passe plus par Traefik depuis le 2026-10-12 (Vault et
+ArgoCD ont leur propre IP). Il deviendra l'ingress **public**
+([ADR-009](../../../docs/adr/ADR-009-public-exposure.md), étape 4 du
+[plan inner-riddle](../../../docs/plans/inner-riddle.md)).
 
 ## Ressources approximatives
 
@@ -76,12 +78,6 @@ kubectl -n traefik get pods,svc          # pod Running, EXTERNAL-IP = load_balan
 kubectl get ingressclass                 # traefik (default)
 curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.240/   # 404 attendu ; à lancer depuis un AUTRE poste du LAN
 ```
-
-## Résolution des noms
-
-Les services seront publiés sous `*.homelab.lan` (ADR-006). Tant qu'il
-n'y a pas d'entrée DNS sur le routeur, ajouter les noms utiles dans
-`/etc/hosts` des postes clients, pointant vers `load_balancer_ip`.
 
 ## Upgrade
 

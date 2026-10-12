@@ -10,7 +10,8 @@ ingress_load_balancer_ip = "192.168.1.240"
 
 # Services internes : une IP par service (ADR-009), jamais redirigée par la
 # Freebox.
-vault_load_balancer_ip = "192.168.1.243"
+vault_load_balancer_ip  = "192.168.1.243"
+argocd_load_balancer_ip = "192.168.1.244"
 
 # kubeconfig_path n'a volontairement pas d'exemple ici : fournis-le via
 # TF_VAR_kubeconfig_path=$KUBECONFIG, jamais en fichier committé.
