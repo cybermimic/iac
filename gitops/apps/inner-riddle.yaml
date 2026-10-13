@@ -14,7 +14,7 @@ spec:
   project: default
   sources:
     - repoURL: git@github.com:cybermimic/inner-riddle.git # accès : repositories/inner-riddle-repo.yaml
-      targetRevision: v0.1.1 # version déployée (étiquette publiée par la CI)
+      targetRevision: v0.2.0 # version déployée (étiquette publiée par la CI)
       path: deploy/chart
       helm:
         valuesObject:
