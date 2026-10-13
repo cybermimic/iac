@@ -30,6 +30,11 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 - Images épinglées : `ghcr.io/actions/actions-runner:2.338.0`,
   `docker:29.9.0-dind` (le modèle du chart utilise `:latest`, d'où le
   modèle de pod écrit en entier dans l'Application).
+- `docker compose` ajouté : l'image `actions-runner` fournit la CLI
+  docker et buildx mais **pas compose** (constaté au premier run : `docker:
+  unknown command: docker compose`). Un conteneur d'init copie le plugin
+  de l'image `docker:29.9.0-cli` (même version que dockerd) dans
+  `/usr/local/libexec/docker/cli-plugins` du runner.
 - `dockerd` fait confiance à la CA interne **pour le seul registre**
   `192.168.1.242` (`/etc/docker/certs.d/192.168.1.242/ca.crt`).
 - `NetworkPolicy` : sorties limitées au DNS du cluster, au registre et à
@@ -85,6 +90,8 @@ Revenir aux révisions précédentes des Applications (git revert).
   Vault, ou politique `external-secrets` sans `secret/data/actions-runners/*`.
 - Listener en erreur `401`/`404` → App ID, Installation ID ou clé privée
   incorrects, ou App non installée sur le dépôt.
+- `docker: unknown command: docker compose` → le volume
+  `docker-cli-plugins` n'est pas monté dans le runner (modèle de pod).
 - Job bloqué « Waiting for a runner » → `runs-on` ne correspond pas à
   `homelab` (variables `CI_RUNNER` / `RELEASE_RUNNER` du dépôt).
 - `x509: certificate signed by unknown authority` au `docker push` → la
