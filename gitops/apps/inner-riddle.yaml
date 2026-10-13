@@ -14,7 +14,7 @@ spec:
   project: default
   sources:
     - repoURL: git@github.com:cybermimic/inner-riddle.git # accès : repositories/inner-riddle-repo.yaml
-      targetRevision: v0.1.0 # version déployée (étiquette publiée par la CI)
+      targetRevision: v0.1.1 # version déployée (étiquette publiée par la CI)
       path: deploy/chart
       helm:
         valuesObject:
@@ -37,6 +37,12 @@ spec:
             remoteKey: inner-riddle/auth # propriétés accounts et session_secret
           networkPolicy:
             ingressNamespaces: [traefik]
+          # Nœud unique, qui est aussi control-plane (même besoin que les
+          # autres features : tolerate_control_plane_taint).
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
     # Pull secret du registre.
     - repoURL: https://github.com/cybermimic/iac.git
       targetRevision: main
