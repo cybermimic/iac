@@ -20,8 +20,11 @@ spec:
           githubConfigSecret: arc-github-app
           # Libellé utilisé par `runs-on` dans les workflows du dépôt.
           runnerScaleSetName: homelab
-          minRunners: 0
-          maxRunners: 1 # contrainte mémoire : un job à la fois
+          # Un runner toujours prêt : sans lui, chaque job attendait 6-7 min le
+          # démarrage d'un pod neuf (une PR de 7 jobs prenait ~45 min).
+          minRunners: 1
+          # Deux jobs en parallèle au plus (~1-3 Gi chacun pendant un build).
+          maxRunners: 2
           # ArgoCD rend le chart sans accès au cluster : le compte du
           # contrôleur doit être donné explicitement.
           controllerServiceAccount:
