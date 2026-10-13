@@ -22,11 +22,12 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 
 ## Fonctionnement
 
-- Au repos : **aucun runner** (`minRunners: 0`), seulement le contrôleur
-  et un pod *listener* (connexion longue à GitHub).
+- Au repos : **un runner prêt** (`minRunners: 1`), le contrôleur et un
+  pod *listener* (connexion longue à GitHub). Sans runner prêt, chaque job
+  attendait 6-7 min le démarrage d'un pod neuf.
 - Un job arrive → un pod runner neuf est créé (runner + `dockerd` en
   sidecar privilégié), il exécute le job puis disparaît.
-  `maxRunners: 1` : les jobs passent un par un (contrainte mémoire).
+  `maxRunners: 2` : deux jobs en parallèle au plus (contrainte mémoire).
 - Images épinglées : `ghcr.io/actions/actions-runner:2.338.0`,
   `docker:29.9.0-dind` (le modèle du chart utilise `:latest`, d'où le
   modèle de pod écrit en entier dans l'Application).
@@ -51,8 +52,9 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 
 ## Ressources approximatives
 
-Contrôleur + listener : ~50-100 Mi. Pendant un job : 1 runner + dockerd,
-~1-3 Gi selon le build. Stockage : `emptyDir` (effacé à la fin du job).
+Contrôleur + listener : ~50-100 Mi. Runner prêt au repos (runner +
+dockerd) : ~200-300 Mi. Pendant un job : ~1-3 Gi par runner selon le build,
+deux runners au plus. Stockage : `emptyDir` (effacé à la fin du job).
 
 ## Ajouter un dépôt (privé) autorisé
 
