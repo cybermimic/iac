@@ -39,7 +39,8 @@ variable "ca_duration" {
 variable "tolerate_control_plane_taint" {
   description = <<-EOT
     Ajoute une toleration control-plane aux pods cert-manager (controller,
-    webhook, cainjector, startupapicheck). Nécessaire tant que le cluster est
+    webhook, cainjector, startupapicheck) et aux pods acmesolver des
+    challenges HTTP-01 Let's Encrypt. Nécessaire tant que le cluster est
     single-node. À repasser à false une fois un nœud worker dédié ajouté.
   EOT
   type        = bool

@@ -184,6 +184,15 @@ resource "kubernetes_manifest" "letsencrypt_issuer" {
             http01 = {
               ingress = {
                 ingressClassName = var.public_ingress_class_name
+                # Le pod acmesolver (créé dans le namespace de l'application,
+                # le temps du challenge) doit lui aussi tolérer la taint
+                # control-plane, sinon il reste Pending et le certificat n'est
+                # jamais émis.
+                podTemplate = {
+                  spec = {
+                    tolerations = local.control_plane_tolerations
+                  }
+                }
               }
             }
           }

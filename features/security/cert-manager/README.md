@@ -65,7 +65,7 @@ total (controller 19, cainjector 17, webhook 10), ~30 mCPU. Un Job
 | `domain` | Seul domaine signable par la CA | — (requis, `homelab.lan` au niveau env) |
 | `ca_common_name` | Nom affiché de la CA | `Homelab Root CA` |
 | `ca_duration` | Validité de la CA | `87600h` (10 ans) |
-| `tolerate_control_plane_taint` | Tolerations control-plane (single-node) | `true` |
+| `tolerate_control_plane_taint` | Tolerations control-plane (single-node), y compris les pods acmesolver des challenges HTTP-01 | `true` |
 | `acme_email` | E-mail du compte Let's Encrypt (non secret) | — (requis) |
 | `public_ingress_class_name` | Classe de l'ingress public, qui sert le challenge HTTP-01 | — (requis, output de `networking/ingress`) |
 
@@ -211,5 +211,16 @@ réimportée sur tous les postes.
 - Navigateur « certificat non reconnu » alors que le certificat est
   `READY` → la CA n'est pas installée sur ce poste, ou pas dans le magasin
   « Autorités de certification racines de confiance ».
+- Certificat Let's Encrypt bloqué sur « Issuing certificate as Secret does
+  not exist » → regarder le challenge :
+  `kubectl -n <ns> get challenge` puis `kubectl -n <ns> describe challenge`,
+  et le pod du solveur :
+  `kubectl -n <ns> get pods -l acme.cert-manager.io/http01-solver=true`.
+  Un pod `Pending` (taint control-plane) ne répond jamais au challenge : la
+  requête `/.well-known/acme-challenge/…` tombe alors sur l'application
+  (constaté pour inner-riddle le 2026-10-15, corrigé par la toleration du
+  `podTemplate` du solveur). Après correction, relancer l'émission en
+  supprimant le `Certificate` (recréé par l'Ingress) ou avec
+  `cmctl renew <nom> -n <ns>`.
 - Refus « name constraint violation » → le nom demandé n'est pas sous
   `homelab.lan`.
