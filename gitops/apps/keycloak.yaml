@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/cybermimic/iac.git
+    targetRevision: main
+    path: features/security/keycloak/gitops
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  syncPolicy:
+    automated:
+      selfHeal: true
+      # Pas de prune (ADR-008).
+    syncOptions:
+      - CreateNamespace=true
+      # Les CRDs de l'opérateur Keycloak (keycloaks.k8s.keycloak.org,
+      # 500+ Ko) dépassent la limite de 262144 octets de l'annotation
+      # kubectl.kubernetes.io/last-applied-configuration (apply classique) —
+      # même cause que pour external-secrets (ADR-008, gitops/apps/external-secrets.yaml).
+      - ServerSideApply=true

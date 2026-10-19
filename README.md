@@ -50,6 +50,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `delivery/argocd` | ✅ Déployé sur `https://192.168.1.244`, Application racine app-of-apps active ([ADR-008](docs/adr/ADR-008-gitops-layout.md)) |
 | `security/external-secrets` | ✅ Déployé par ArgoCD, `ClusterSecretStore` `vault` valide (Vault en TLS sur `192.168.1.243`) |
 | `delivery/registry` (Zot) | ✅ Déployé sur `https://192.168.1.242`, approuvé par containerd ([ADR-010](docs/adr/ADR-010-container-registry.md)) |
+| `security/keycloak` (fournisseur d'identité) | ⏳ Code prêt (`gitops/apps/keycloak.yaml`), pas encore appliqué — attend la config Vault opérateur ([ADR-012](docs/adr/ADR-012-identity-keycloak.md)) |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ⏳ Livré par ArgoCD (scale set `homelab` pour inner-riddle) — attend la GitHub App ([ADR-011](docs/adr/ADR-011-ci-runners.md)) |
 | Application inner-riddle | ⏳ Déclarée dans ArgoCD (sync manuelle), attend la version `v0.1.0` — [plan inner-riddle](docs/plans/inner-riddle.md) |

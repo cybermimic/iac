@@ -1,0 +1,32 @@
+# Console d'administration et realm master : jamais sur le nom public,
+# jamais derrière l'ingress public (ADR-012). Même schéma que
+# features/security/vault : IP LAN dédiée (MetalLB) + certificat de la CA
+# interne, pas d'Ingress.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-admin-tls
+spec:
+  secretName: keycloak-admin-tls
+  ipAddresses: ["192.168.1.245"]
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: homelab-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-admin
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.1.245"
+spec:
+  type: LoadBalancer
+  selector:
+    # Label posé par l'opérateur Keycloak sur les pods du CR "keycloak".
+    app.kubernetes.io/managed-by: keycloak-operator
+    app.kubernetes.io/instance: keycloak
+  ports:
+    - name: https
+      port: 8443
+      targetPort: 8443

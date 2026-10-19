@@ -1,0 +1,59 @@
+# Sauvegarde quotidienne (ADR-012) : pg_dump sur le même volume local-path
+# que la base elle-même — perdre le disque du NucBox perd les deux, même
+# limite que les autres features tant qu'il n'y a pas de stockage objet.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: keycloak-postgres-backup
+spec:
+  schedule: "30 3 * * *" # 03h30, creux d'usage
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+          containers:
+            - name: pg-dump
+              image: postgres:16.11
+              env:
+                - name: PGHOST
+                  value: keycloak-postgres
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: keycloak-postgres
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: keycloak-postgres
+                      key: password
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  pg_dump -d keycloak |
+                  gzip > /backup/keycloak-$(date +%F).sql.gz &&
+                  find /backup -name 'keycloak-*.sql.gz' -mtime +14 -delete
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: keycloak-postgres-backup
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-postgres-backup
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
