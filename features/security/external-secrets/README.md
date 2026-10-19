@@ -51,23 +51,27 @@ vault secrets enable -path=secret kv-v2
 vault auth enable kubernetes
 vault write auth/kubernetes/config kubernetes_host=https://kubernetes.default.svc
 
-# Une policy par application consommatrice, par exemple inner-riddle :
-vault policy write inner-riddle - <<'HCL'
+# Une seule policy, un chemin par feature/application consommatrice —
+# un seul rôle Kubernetes auth (external-secrets) sert tout le cluster,
+# ajouter un chemin ici à chaque nouvelle feature qui a besoin de Vault
+# (2e cas rencontré avec security/keycloak, 2026-10-19) :
+vault policy write external-secrets-read - <<'HCL'
 path "secret/data/inner-riddle/*" { capabilities = ["read"] }
+path "secret/data/keycloak/*"     { capabilities = ["read"] }
 HCL
 
 vault write auth/kubernetes/role/external-secrets \
   bound_service_account_names=external-secrets \
   bound_service_account_namespaces=external-secrets \
-  policies=inner-riddle \
+  policies=external-secrets-read \
   ttl=1h
 ```
 
-Le rôle `external-secrets` ci-dessus est volontairement générique
-(un seul rôle pour commencer) ; à affiner en un rôle par application
-(policies distinctes) si plusieurs applications consomment des secrets
-différents — décision à prendre quand le deuxième cas se présente, pas
-avant (voir `CLAUDE.md`, "Ne pas inventer").
+Un seul rôle Kubernetes auth pour tout le cluster (volontairement
+générique) ; à affiner en un rôle par application (policies distinctes,
+donc isolation entre applications) seulement si une fuite entre
+applications devient un vrai problème — pas avant (voir `CLAUDE.md`,
+"Ne pas inventer").
 
 ## Inputs / Outputs
 

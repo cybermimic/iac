@@ -439,3 +439,11 @@ spec:
             timeoutSeconds: 10
       serviceAccountName: keycloak-operator
       terminationGracePeriodSeconds: 10
+      # Écart volontaire par rapport au manifeste upstream (ADR-012) :
+      # toleration control-plane, nécessaire tant que le cluster est
+      # single-node (même besoin que tous les autres composants). Sans
+      # elle, l'opérateur reste Pending indéfiniment.
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule

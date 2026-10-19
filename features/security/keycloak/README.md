@@ -48,6 +48,13 @@ vault kv put secret/keycloak/admin username=admin password=<généré>
 vault kv patch secret/inner-riddle/auth oidc-client-secret=<généré>
 ```
 
+**Et** étendre la policy du rôle Kubernetes auth `external-secrets` à
+`secret/data/keycloak/*` — sans ça, les `ExternalSecret` échouent en
+`403 permission denied` même si les valeurs ci-dessus existent (rencontré
+au premier déploiement, 2026-10-19). Procédure complète :
+[security/external-secrets](../external-secrets/README.md), section
+« Configuration Vault requise ».
+
 `inner-riddle/auth` existe déjà (clés `accounts`, `session_secret`,
 `oidc-client-secret` ajoutée ici) — `vault kv patch`, pas `put`, pour ne
 pas écraser les clés existantes. Protéger le compte `admin` par 2FA dès la
@@ -105,8 +112,14 @@ serveur seul — elles vivent dans PostgreSQL.
 
 ## Troubleshooting
 
-- `ClusterSecretStore`/secrets en erreur → Vault scellé ou chemins
-  manquants (section « Secrets Vault requis »).
+- `ClusterSecretStore`/secrets en erreur `403 permission denied` → policy
+  Vault pas étendue à `secret/data/keycloak/*` (section « Secrets Vault
+  requis » ci-dessus).
+- Pod `keycloak-operator` en `Pending` (`untolerated taint`) → toleration
+  control-plane manquante sur le Deployment vendorisé
+  (`gitops/operator/kubernetes.yml`) ; déjà corrigée une fois
+  (2026-10-19), à vérifier en premier si une future mise à jour du
+  manifeste upstream l'a fait disparaître.
 - Pod Keycloak qui ne démarre pas → `kubectl -n keycloak logs
   statefulset/keycloak` ; souvent une erreur de connexion à PostgreSQL
   (mot de passe incohérent entre `keycloak-postgres` et la base déjà
