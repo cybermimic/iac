@@ -1,0 +1,38 @@
+# Realm inner-riddle (ADR-012) : identité seulement, aucun rôle métier —
+# les droits par carte (D-59 : créateur = patient, partagé = thérapeute)
+# vivent dans l'application, jamais dans Keycloak. keycloak-config-cli
+# applique ce fichier de façon idempotente (clé = realmName).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-inner-riddle
+data:
+  inner-riddle.yaml: |
+    realm: inner-riddle
+    enabled: true
+    registrationAllowed: false
+    resetPasswordAllowed: true
+    bruteForceProtected: true
+    sslRequired: external
+
+    otpPolicyType: totp
+    otpPolicyAlgorithm: HmacSHA1
+    otpPolicyDigits: 6
+
+    clients:
+      - clientId: inner-riddle
+        name: inner-riddle
+        enabled: true
+        publicClient: false
+        # Substitution par keycloak-config-cli depuis une variable
+        # d'environnement du Job (secret Vault inner-riddle/auth, clé
+        # oidc-client-secret — jamais une valeur en dur ici).
+        secret: "${INNER_RIDDLE_CLIENT_SECRET}"
+        protocol: openid-connect
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: false
+        redirectUris:
+          - "https://inner-riddle.cybermimic.com/api/auth/callback"
+        webOrigins: []
+        attributes:
+          post.logout.redirect.uris: "https://inner-riddle.cybermimic.com/"

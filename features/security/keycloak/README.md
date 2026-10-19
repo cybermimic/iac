@@ -1,0 +1,126 @@
+# security/keycloak
+
+## Objectif
+
+Fournisseur d'identité centralisé ([ADR-012](../../../docs/adr/ADR-012-identity-keycloak.md)) :
+gère les comptes, mots de passe et 2FA des applications business, en
+commençant par inner-riddle. Un realm par application — Keycloak ne porte
+que l'identité, jamais les droits métier (D-58/D-59, dans l'application).
+
+## Gérée par ArgoCD, pas par Terraform
+
+`gitops/apps/keycloak.yaml` (ADR-008) — opérateur Keycloak officiel
+(manifestes vendorisés, pas de chart) + PostgreSQL + `keycloak-config-cli`.
+Exception : `public_namespaces` (Terraform, `networking/ingress`) doit
+inclure `keycloak` pour que l'exposition publique fonctionne.
+
+## Dépendances
+
+- `delivery/argocd`, `security/external-secrets` — mots de passe
+  PostgreSQL/admin et secret du client OIDC, tous dans Vault.
+- `storage/local-path` — volumes PostgreSQL (données + sauvegardes).
+- `networking/ingress` — pages de connexion publiques ; variable
+  `public_namespaces` à mettre à jour (Terraform, en dehors de ce dossier).
+- `security/cert-manager` — certificat Let's Encrypt (public) et CA
+  interne (admin).
+- Vault configuré par l'opérateur (secrets ci-dessous) avant que quoi que
+  ce soit ne devienne fonctionnel.
+
+## Exposition (ADR-012) — la règle à ne jamais casser
+
+| Adresse | Sert | Publié par |
+|---|---|---|
+| `https://auth.cybermimic.com` | **Seulement** `/realms/inner-riddle` et `/resources` (un chemin par realm, ajouté explicitement) | `ingress-public.yaml` (Traefik public) |
+| `https://192.168.1.245:8443` | Console d'administration, realm `master` | `admin-access.yaml` (Service `LoadBalancer`, CA interne) |
+
+`/admin` et `/realms/master` **ne sont jamais** routés par l'ingress
+public — l'Ingress de ce dossier ne liste que des chemins explicites,
+jamais de wildcard. Ajouter un nouveau realm public = ajouter son chemin
+ici, en revue.
+
+## Secrets Vault requis (opérateur, pas l'agent)
+
+Avant que `ClusterSecretStore vault` puisse les lire, dans Vault :
+
+```bash
+vault kv put secret/keycloak/postgres username=keycloak password=<généré>
+vault kv put secret/keycloak/admin username=admin password=<généré>
+vault kv patch secret/inner-riddle/auth oidc-client-secret=<généré>
+```
+
+`inner-riddle/auth` existe déjà (clés `accounts`, `session_secret`,
+`oidc-client-secret` ajoutée ici) — `vault kv patch`, pas `put`, pour ne
+pas écraser les clés existantes. Protéger le compte `admin` par 2FA dès la
+première connexion sur `https://192.168.1.245:8443`.
+
+## Ressources approximatives
+
+~700 Mi-1 Gi RAM (opérateur ~100 Mi, Keycloak ~512-800 Mi, PostgreSQL
+~128-256 Mi), 10 Gi de stockage (5 Gi données + 5 Gi sauvegardes,
+`local-path`). À mesurer après déploiement (budget 16 Go RAM).
+
+## Inputs / Outputs
+
+Pas de variables Terraform (feature ArgoCD). Configuration dans
+`gitops/keycloak.yaml` (hostnames, ressources), `gitops/postgres/` (taille
+du volume, image), `gitops/config-cli/realm-inner-riddle.yaml` (realm).
+
+## Installation
+
+1. Vault configuré (section ci-dessus).
+2. `public_namespaces` mis à jour côté Terraform (`terraform plan` /
+   `apply`, voir `infrastructure/environments/homelab/README.md`) — sans
+   ça, `ingress-public.yaml` reste sans effet (Traefik ignore les
+   namespaces non listés).
+3. PR mergée sur `main` → ArgoCD synchronise automatiquement
+   (`syncPolicy.automated`).
+
+Vérification :
+
+```bash
+kubectl -n argocd get application keycloak        # Synced, Healthy
+kubectl -n keycloak get keycloak,statefulset,pods
+kubectl -n keycloak get certificate                # keycloak-admin-tls, keycloak-public-tls : READY True
+kubectl -n keycloak logs job/keycloak-config-cli   # realm appliqué sans erreur
+```
+
+Puis, depuis un poste du LAN avec la CA installée :
+`https://192.168.1.245:8443` → console d'administration. Depuis
+n'importe où : `https://auth.cybermimic.com/realms/inner-riddle`.
+
+## Upgrade
+
+Keycloak, l'opérateur et ses CRDs partagent une version (ADR-012) :
+remplacer les 5 fichiers de `gitops/operator/` par ceux du tag visé
+(`https://github.com/keycloak/keycloak-k8s-resources/tree/<version>/kubernetes`),
+lire les release notes (changements de schéma de base possibles), `plan`
+visuel via `git diff`, laisser ArgoCD synchroniser. `keycloak-config-cli`
+: aligner sa version sur celle de Keycloak.
+
+## Rollback
+
+Revenir aux manifestes de l'opérateur de la version précédente (PR). Les
+données (realms, comptes) ne sont pas affectées par un rollback du
+serveur seul — elles vivent dans PostgreSQL.
+
+## Troubleshooting
+
+- `ClusterSecretStore`/secrets en erreur → Vault scellé ou chemins
+  manquants (section « Secrets Vault requis »).
+- Pod Keycloak qui ne démarre pas → `kubectl -n keycloak logs
+  statefulset/keycloak` ; souvent une erreur de connexion à PostgreSQL
+  (mot de passe incohérent entre `keycloak-postgres` et la base déjà
+  initialisée — un changement de mot de passe après le premier démarrage
+  de PostgreSQL ne met pas à jour le mot de passe **dans** PostgreSQL,
+  seulement le secret).
+- `keycloak-config-cli` en échec → `kubectl -n keycloak logs
+  job/keycloak-config-cli` ; vérifier que `INNER_RIDDLE_CLIENT_SECRET`
+  n'est pas vide (`inner-riddle/auth` doit déjà avoir la clé
+  `oidc-client-secret` dans Vault avant le premier sync).
+- Certificat navigateur non reconnu sur `https://192.168.1.245:8443` → CA
+  interne pas installée sur ce poste (voir `security/cert-manager`).
+- `Service` admin qui ne sélectionne aucun pod (`kubectl -n keycloak get
+  endpoints keycloak-admin` vide) → vérifier les labels réels des pods
+  Keycloak (`kubectl -n keycloak get pods --show-labels`) contre le
+  `selector` de `admin-access.yaml` ; l'opérateur peut changer ces labels
+  d'une version à l'autre, non garanti par la CRD.

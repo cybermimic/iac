@@ -84,7 +84,7 @@ Assemblée avec les autres features dans `infrastructure/environments/homelab`
 
 ```hcl
 ingress_load_balancer_ip = "192.168.1.240"
-public_namespaces        = ["inner-riddle"]
+public_namespaces        = ["inner-riddle", "keycloak"]
 ```
 
 Puis `terraform plan` (doit montrer uniquement des créations dans

@@ -37,7 +37,9 @@ Terraform 1.15.x, Vault 2.0.4 (chart `hashicorp/vault`), Traefik v3.7.13
 29.9.0-dind), MetalLB chart
 0.14.9, local-path-provisioner v0.0.31, ArgoCD chart `argo/argo-cd` 10.9.2
 (ArgoCD v3.5.3), External Secrets Operator chart `external-secrets` 2.12.0
-(géré par ArgoCD, pas par Terraform — voir ADR-008).
+(géré par ArgoCD, pas par Terraform — voir ADR-008), Keycloak 26.8.1
+(opérateur officiel, manifestes vendorisés — pas de chart), PostgreSQL 16.11,
+keycloak-config-cli v6.5.1 (géré par ArgoCD — voir ADR-012).
 Mettre à jour cette ligne à chaque montée de version.
 
 ## Ne jamais faire

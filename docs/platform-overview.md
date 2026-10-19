@@ -28,7 +28,8 @@ le LAN d'une Freebox Pop (Freebox OS 4.13), qui fait routeur, DHCP et DNS.
 | `192.168.1.242` | **Registre Zot** — `https://192.168.1.242` ([ADR-010](adr/ADR-010-container-registry.md)) | ArgoCD (`gitops/apps/registry.yaml`) |
 | `192.168.1.243` | **Vault** — `https://192.168.1.243:8200` | Terraform (`vault_load_balancer_ip`) |
 | `192.168.1.244` | **ArgoCD** — `https://192.168.1.244` | Terraform (`argocd_load_balancer_ip`) |
-| `192.168.1.245` – `.250` | Services internes futurs | — |
+| `192.168.1.245` | **Keycloak — console d'administration** — `https://192.168.1.245:8443`, jamais sur le nom public ([ADR-012](adr/ADR-012-identity-keycloak.md)) | ArgoCD (`gitops/apps/keycloak.yaml`) |
+| `192.168.1.246` – `.250` | Services internes futurs | — |
 | `10.244.0.0/16` | IP des pods (Calico) — invisibles depuis le LAN | Calico (voir [runbook](runbooks/calico-pod-cidr-migration.md)) |
 | `10.96.0.0/12` | IP internes des Services Kubernetes (`ClusterIP`) | kubeadm |
 
@@ -90,6 +91,7 @@ Même schéma pour ArgoCD (`https://192.168.1.244`, TLS par argocd-server).
 | Zot | Registre d'images, `https://192.168.1.242` (htpasswd via External Secrets) | `registry` | **ArgoCD** | [delivery/registry](../features/delivery/registry/README.md) |
 | Actions Runner Controller | Runners GitHub Actions des dépôts privés (scale set `homelab`, DinD, 0 à 1 runner) | `arc-systems`, `arc-runners` | **ArgoCD** | [delivery/actions-runners](../features/delivery/actions-runners/README.md) |
 | Traefik | Ingress **public** (classe non par défaut, namespaces autorisés) ; certificats Let's Encrypt | `traefik` | Terraform | [networking/ingress](../features/networking/ingress/README.md) |
+| Keycloak | Fournisseur d'identité ; pages de connexion publiques `https://auth.cybermimic.com` (chemins explicites seulement), administration `https://192.168.1.245:8443` ([ADR-012](adr/ADR-012-identity-keycloak.md)) | `keycloak` | **ArgoCD** | [security/keycloak](../features/security/keycloak/README.md) |
 
 Les pods « système » (apiserver, etcd, calico-node, kube-proxy, speaker
 MetalLB) utilisent directement le réseau du NucBox (`hostNetwork`) ; les
@@ -118,6 +120,9 @@ MetalLB ──► IP LAN de Vault (.243), ArgoCD (.244), Traefik (.240)
 cert-manager (CA interne) ──► certificats de Vault et d'ArgoCD
 local-path ──► Vault (volume de données)
 ArgoCD ──► External Secrets ──► Vault (https://192.168.1.243:8200)
+External Secrets ──► Keycloak (mot de passe PostgreSQL, compte admin, secret client inner-riddle)
+local-path ──► Keycloak (volume PostgreSQL)
+Traefik (ingress public) ──► Keycloak (pages de connexion, auth.cybermimic.com)
 ```
 
 Elles sont explicites dans `infrastructure/environments/homelab/main.tf`
@@ -143,7 +148,9 @@ README des features.
 Environ 3 Go de RAM utilisés sur 16 Go (Kubernetes lui-même compris).
 Mesures des features (2026-09-27 / 2026-10-12) : MetalLB ~70 Mi,
 local-path ~10 Mi, Vault ~30 Mi, Traefik ~20 Mi, cert-manager ~50 Mi,
-ArgoCD ~120 Mi (à vide). ~11 Gi restent disponibles.
+ArgoCD ~120 Mi (à vide). Keycloak ajoute ~700 Mi-1 Gi (opérateur +
+serveur + PostgreSQL, estimation ADR-012, à mesurer après déploiement).
+~10-11 Gi restent disponibles.
 
 ## 8. Dette connue
 

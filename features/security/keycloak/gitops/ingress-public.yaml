@@ -1,0 +1,37 @@
+# Exposition publique (ADR-012) : SEULEMENT /realms/<realm> (un chemin par
+# realm, ajouté explicitement ici — jamais de wildcard) et /resources
+# (assets statiques des pages de connexion). /admin et /realms/master ne
+# sont jamais routés ici. Le namespace "keycloak" doit être dans
+# public_namespaces (Terraform, networking/ingress) pour que Traefik
+# accepte cet Ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-public
+  annotations:
+    # HTTP -> HTTPS déjà fait au niveau de l'entrypoint Traefik
+    # (networking/ingress, Terraform), rien à ajouter ici.
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [auth.cybermimic.com]
+      secretName: keycloak-public-tls
+  rules:
+    - host: auth.cybermimic.com
+      http:
+        paths:
+          - path: /realms/inner-riddle
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak-service
+                port:
+                  number: 8080
+          - path: /resources
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak-service
+                port:
+                  number: 8080

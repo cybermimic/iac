@@ -1,0 +1,57 @@
+# Applique les realms versionnés dans ce dossier, de façon idempotente
+# (ADR-012). ArgoCD recrée ce Job à chaque sync (hook Sync, substitué par
+# un nouveau Job à chaque changement de contenu via l'annotation
+# BeforeHookCreation).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-config-cli
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: keycloak-config-cli
+          image: adorsys/keycloak-config-cli:v6.5.1 # jamais latest, voir CLAUDE.md
+          env:
+            - name: KEYCLOAK_URL
+              value: http://keycloak-service.keycloak.svc:8080
+            - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+              value: "true"
+            - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+              value: 120s
+            - name: KEYCLOAK_SSL_VERIFY
+              value: "false" # interne au cluster, backend en HTTP (voir keycloak.yaml)
+            - name: KEYCLOAK_USER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin
+                  key: username
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin
+                  key: password
+            - name: IMPORT_VARSUBSTITUTION_ENABLED
+              value: "true"
+            - name: INNER_RIDDLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: inner-riddle-oidc-client-secret
+                  key: client-secret
+            - name: IMPORT_FILES_LOCATIONS
+              value: /config/*.yaml
+          volumeMounts:
+            - name: realms
+              mountPath: /config
+      volumes:
+        - name: realms
+          configMap:
+            name: keycloak-realm-inner-riddle

@@ -9,7 +9,10 @@ metallb_ip_range = "192.168.1.240-192.168.1.250" # vérifier que c'est hors plag
 ingress_load_balancer_ip = "192.168.1.240"
 
 # Ingress public (ADR-009) : seuls ces namespaces sont servis par Traefik.
-public_namespaces = ["inner-riddle"]
+# keycloak : pages de connexion publiques (ADR-012, chemins explicites
+# /realms/inner-riddle et /resources uniquement — voir le README de la
+# feature, jamais /admin ni /realms/master).
+public_namespaces = ["inner-riddle", "keycloak"]
 
 # Compte Let's Encrypt (applications publiques).
 acme_email = "operateur@example.com"

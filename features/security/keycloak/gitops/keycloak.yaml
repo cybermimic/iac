@@ -1,0 +1,59 @@
+# Ressource Keycloak (CR de l'opérateur) — voir ADR-012 pour le partage
+# d'exposition public/admin.
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+spec:
+  instances: 1 # nœud unique, pas de HA (ADR-012)
+
+  db:
+    vendor: postgres
+    host: keycloak-postgres
+    database: keycloak
+    usernameSecret:
+      name: keycloak-postgres
+      key: username
+    passwordSecret:
+      name: keycloak-postgres
+      key: password
+
+  bootstrapAdmin:
+    user:
+      secret: keycloak-admin
+
+  hostname:
+    hostname: auth.cybermimic.com
+    # Console d'administration sur l'IP LAN dédiée, jamais sur le nom
+    # public (ADR-012). Hostname v2 : accepte une URL complète.
+    admin: https://192.168.1.245:8443
+
+  http:
+    httpEnabled: true # backend Traefik (public), TLS terminé par l'ingress
+    tlsSecret: keycloak-admin-tls # certificat CA interne, pour le Service LoadBalancer admin ci-dessous
+
+  # Ingress fourni par l'opérateur désactivé : on écrit les nôtres
+  # (ingress.yaml pour le public, service-admin.yaml pour l'admin), pour
+  # garantir que /admin et /realms/master ne sont jamais exposés par
+  # l'ingress public.
+  ingress:
+    enabled: false
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 800Mi
+
+  unsupported:
+    # Mécanisme non garanti par l'opérateur (voir CRD), mais seul moyen
+    # d'ajouter une toleration — même besoin que toutes les autres
+    # features sur ce cluster single-node.
+    podTemplate:
+      spec:
+        tolerations:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule
