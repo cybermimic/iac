@@ -25,8 +25,8 @@ spec:
             - name: registry-pull
           ingress:
             className: traefik # ingress public, namespace autorisé (ADR-009)
-            # Valider d'abord en staging, puis passer à « letsencrypt ».
-            clusterIssuer: letsencrypt-staging
+            # Validé en staging le 2026-10-16 ; certificat de production.
+            clusterIssuer: letsencrypt
           persistence:
             storageClass: local-path
           externalSecret:
