@@ -19,7 +19,13 @@ spec:
           effect: NoSchedule
       containers:
         - name: keycloak-config-cli
-          image: adorsys/keycloak-config-cli:v6.5.1 # jamais latest, voir CLAUDE.md
+          # Convention de tag réelle de cette image : <version-cli>-<version-keycloak>,
+          # pas "vX.Y.Z" (erreur initiale, image introuvable). 26.5.5 est la
+          # version Keycloak la plus récente disponible pour ce tag de CLI au
+          # moment de l'écriture — l'API d'admin Keycloak est stable au sein
+          # d'une même ligne majeure (26.x), l'écart avec le serveur (26.8.1)
+          # n'est pas bloquant.
+          image: adorsys/keycloak-config-cli:6.5.1-26.5.5 # jamais latest, voir CLAUDE.md
           env:
             - name: KEYCLOAK_URL
               value: http://keycloak-service.keycloak.svc:8080
