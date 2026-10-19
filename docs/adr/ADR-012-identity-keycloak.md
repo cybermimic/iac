@@ -1,7 +1,6 @@
 # ADR-012 — Fournisseur d'identité (Keycloak)
 
-**Statut : Proposé** (2026-10-13) — à valider par l'opérateur avant toute
-implémentation.
+**Statut : Acceptée** (2026-10-19).
 
 ## Contexte
 
@@ -111,4 +110,34 @@ Configuration des realms :
 
 ## Décision
 
-*À compléter après validation.*
+La proposition est retenue telle quelle, avec les précisions suivantes :
+
+- **Comptes** : créés par l'opérateur dans la console Keycloak.
+  Inscription libre désactivée. Pas de compte de service de gestion des
+  utilisateurs pour l'instant ; l'invitation depuis l'application viendra
+  plus tard (ticket côté inner-riddle).
+- **Rôles de realm** : **aucun**. Les droits (D-59, par carte : le
+  créateur d'une carte en est le patient, celui avec qui elle est
+  partagée en est le thérapeute) vivent dans l'application, pas dans
+  Keycloak — lui donner des rôles métier reviendrait à donner à
+  inner-riddle des droits d'administration sur Keycloak. Keycloak ne
+  porte que l'identité (D-58). Le rôle client `reader` (lecture seule,
+  intérim avant IR-046) peut être omis s'il n'y a pas encore
+  d'utilisateur en lecture seule.
+- **E-mails** : aucun relais SMTP pour l'instant. Changement de mot de
+  passe et 2FA par chaque utilisateur depuis sa console de compte
+  Keycloak (lien déjà prévu dans l'application, IR-045) ; réinitialisation
+  par l'opérateur depuis la console d'administration. Une feature « boîte
+  mail » (domaine `cybermimic.com`, MX déjà chez OVH, SPF en place) est
+  prévue plus tard pour lever cette limite.
+
+Ce que l'application inner-riddle attend de cette feature (déjà prêt côté
+chart, IR-045) : realm `inner-riddle`, client confidentiel `inner-riddle`
+(redirection exacte `https://inner-riddle.cybermimic.com/api/auth/callback`,
+post-logout `https://inner-riddle.cybermimic.com/`), émetteur
+`https://auth.cybermimic.com/realms/inner-riddle`, secret du client dans
+Vault (`inner-riddle/auth`, clé `oidc-client-secret`, même
+`ExternalSecret` que `session_secret`). La bascule de
+`gitops/apps/inner-riddle.yaml` (`auth.mode: oidc` + `oidc.*`) se fait
+seulement une fois le realm et les comptes réels en place — un
+changement distinct de celui-ci.
