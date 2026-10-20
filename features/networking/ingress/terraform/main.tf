@@ -59,6 +59,18 @@ resource "helm_release" "traefik" {
         }
         kubernetesIngress = {
           namespaces = var.public_namespaces
+          # Le chart recopie par défaut le status du Service traefik/traefik
+          # dans les Ingress (publishedService). Mais le provider ne lit que
+          # public_namespaces, qui ne contient pas « traefik » (ADR-009) :
+          # Traefik ne trouve pas son propre Service, les Ingress restent
+          # sans adresse et ArgoCD les voit « Progressing ». On publie
+          # donc directement l'IP fixe, connue ici.
+          publishedService = {
+            enabled = false
+          }
+          ingressEndpoint = {
+            ip = var.load_balancer_ip
+          }
         }
       }
 
