@@ -120,13 +120,18 @@ serveur seul — elles vivent dans PostgreSQL.
 - Connexion à une application refusée après le retour de Keycloak
   (« la connexion n'a pas abouti »), journaux Keycloak
   `CODE_TO_TOKEN_ERROR … error="invalid_client_credentials"` → le secret
-  du client enregistré dans Keycloak n'est plus celui de Vault. Rencontré
-  le 2026-10-20 : `keycloak-config-cli` sautait l'import des realms dont le
-  fichier n'avait pas changé (cache par empreinte), donc le secret de la
-  première création restait en place. Le Job tourne maintenant avec
-  `IMPORT_CACHE_ENABLED=false`. Après un changement de secret dans Vault,
-  il faut une synchro de l'Application `keycloak` pour relancer le Job (le
-  hook ne tourne qu'à une synchro), puis redémarrer le backend de
+  du client enregistré dans Keycloak n'est pas celui de Vault. Rencontré
+  le 2026-10-20 : le realm écrivait `${INNER_RIDDLE_CLIENT_SECRET}`, alors
+  que `keycloak-config-cli` attend `$(env:NOM)`. Le texte était donc
+  enregistré tel quel comme secret, visible dans ce dépôt public.
+  Vérification sans afficher le secret : depuis le pod de l'application,
+  un échange de jeton avec un code bidon doit répondre `invalid_grant`
+  (secret accepté), pas `unauthorized_client`. Le Job tourne aussi avec
+  `IMPORT_CACHE_ENABLED=false`, pour que chaque synchro réapplique les
+  valeurs venues de Vault. Après un changement de secret dans Vault, il
+  faut une synchro **manuelle** de l'Application `keycloak` : le Job est
+  un hook, que la synchro automatique ne relance pas tant qu'aucune autre
+  ressource ne change. Il faut ensuite redémarrer le backend de
   l'application, qui ne lit son secret qu'au démarrage.
 - Application `keycloak` en `OutOfSync` permanent sur
   `StatefulSet/keycloak-postgres`, alors qu'un `kubectl diff

@@ -27,7 +27,10 @@ data:
         # Substitution par keycloak-config-cli depuis une variable
         # d'environnement du Job (secret Vault inner-riddle/auth, clé
         # oidc_client_secret — jamais une valeur en dur ici).
-        secret: "${INNER_RIDDLE_CLIENT_SECRET}"
+        # Syntaxe de keycloak-config-cli : $(env:NOM), pas ${NOM}. Avec
+        # ${NOM}, le texte était enregistré tel quel comme secret du client
+        # (2026-10-20).
+        secret: "$(env:INNER_RIDDLE_CLIENT_SECRET)"
         protocol: openid-connect
         standardFlowEnabled: true
         directAccessGrantsEnabled: false
