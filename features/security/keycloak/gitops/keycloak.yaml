@@ -50,6 +50,28 @@ spec:
     - name: proxy-trusted-addresses
       value: 10.244.0.0/16
 
+  # L'opérateur crée la NetworkPolicy keycloak-network-policy, qui ouvre
+  # par défaut le port 8080 à tout le cluster. Une NetworkPolicy à part ne
+  # pourrait rien retirer (les règles s'additionnent), d'où ce champ. Sans
+  # lui, n'importe quel pod pourrait envoyer de faux X-Forwarded-* (voir
+  # proxy-trusted-addresses). Seuls deux clients appellent ce port :
+  networkPolicy:
+    enabled: true
+    http:
+      # Traefik (ingress-public.yaml) ;
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: traefik
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
+      # keycloak-config-cli (config-cli/job.yaml).
+      - podSelector:
+          matchLabels:
+            job-name: keycloak-config-cli
+    # https (8443, console admin depuis le LAN) et management (9000, sondes
+    # du kubelet) restent ouverts, comme le défaut de l'opérateur.
+
   # Ingress fourni par l'opérateur désactivé : on écrit les nôtres
   # (ingress.yaml pour le public, service-admin.yaml pour l'admin), pour
   # garantir que /admin et /realms/master ne sont jamais exposés par
