@@ -57,7 +57,14 @@ spec:
           volumeMounts:
             - name: realms
               mountPath: /config
+      # Volume projeté : combine les ConfigMaps des différents realms dans
+      # le même répertoire, pour que IMPORT_FILES_LOCATIONS=/config/*.yaml
+      # les importe tous sans avoir à lister chaque fichier.
       volumes:
         - name: realms
-          configMap:
-            name: keycloak-realm-inner-riddle
+          projected:
+            sources:
+              - configMap:
+                  name: keycloak-realm-inner-riddle
+              - configMap:
+                  name: keycloak-realm-master

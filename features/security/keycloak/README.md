@@ -38,6 +38,11 @@ public — l'Ingress de ce dossier ne liste que des chemins explicites,
 jamais de wildcard. Ajouter un nouveau realm public = ajouter son chemin
 ici, en revue.
 
+Conséquence : le realm `master` a sa propre `frontendUrl` (`gitops/config-cli/realm-master.yaml`)
+pointée sur l'adresse admin, sinon Keycloak construit ses URLs OIDC avec
+le `hostname` public — qui n'expose pas `master` — et la console
+d'administration reste bloquée au chargement (voir Troubleshooting).
+
 ## Secrets Vault requis (opérateur, pas l'agent)
 
 Avant que `ClusterSecretStore vault` puisse les lire, dans Vault :
@@ -112,6 +117,18 @@ serveur seul — elles vivent dans PostgreSQL.
 
 ## Troubleshooting
 
+- Console d'administration qui charge puis reste bloquée, le navigateur
+  demandant `https://auth.cybermimic.com/realms/master/protocol/openid-connect/3p-cookies/step1.html`
+  (404, normal — `ingress-public.yaml` ne route que `/realms/inner-riddle`
+  et `/resources`) → le realm `master` construit ses URLs OIDC (connexion
+  de la console, 3p-cookies) avec le `hostname` public plutôt qu'avec
+  l'adresse admin (rencontré le 2026-10-20). Corrigé par
+  `gitops/config-cli/realm-master.yaml`
+  (`attributes.frontendUrl: https://192.168.1.245:8443`), appliqué
+  automatiquement par `keycloak-config-cli` à chaque sync. Si le problème
+  revient malgré ce fichier, vérifier à la main :
+  `kubectl -n keycloak exec -i keycloak-0 -- /opt/keycloak/bin/kcadm.sh get realms/master`
+  (champ `attributes.frontendUrl`).
 - `ClusterSecretStore`/secrets en erreur `403 permission denied` → policy
   Vault pas étendue à `secret/data/keycloak/*` (section « Secrets Vault
   requis » ci-dessus).
