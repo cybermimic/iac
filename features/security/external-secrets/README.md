@@ -51,19 +51,26 @@ vault secrets enable -path=secret kv-v2
 vault auth enable kubernetes
 vault write auth/kubernetes/config kubernetes_host=https://kubernetes.default.svc
 
-# Une seule policy, un chemin par feature/application consommatrice —
-# un seul rôle Kubernetes auth (external-secrets) sert tout le cluster,
-# ajouter un chemin ici à chaque nouvelle feature qui a besoin de Vault
-# (2e cas rencontré avec security/keycloak, 2026-10-19) :
-vault policy write external-secrets-read - <<'HCL'
-path "secret/data/inner-riddle/*" { capabilities = ["read"] }
-path "secret/data/keycloak/*"     { capabilities = ["read"] }
+# Une seule policy ("external-secrets"), un chemin par feature/application
+# consommatrice — un seul rôle Kubernetes auth sert tout le cluster.
+# ⚠️ Avant de la réécrire, toujours lire l'existant
+# (`vault policy read external-secrets`) et reporter TOUS ses chemins :
+# un `vault policy write` remplace le contenu entier, il n'ajoute rien.
+# Un oubli ici a cassé 4 ExternalSecret pendant 18h le 2026-10-19
+# (registry, actions-runners, argocd — policy réécrite sous un autre nom
+# en ne reportant que inner-riddle, sans relire l'originale d'abord).
+vault policy write external-secrets - <<'HCL'
+path "secret/data/inner-riddle/*"    { capabilities = ["read"] }
+path "secret/data/registry/*"        { capabilities = ["read"] }
+path "secret/data/actions-runners/*" { capabilities = ["read"] }
+path "secret/data/argocd/*"          { capabilities = ["read"] }
+path "secret/data/keycloak/*"        { capabilities = ["read"] }
 HCL
 
 vault write auth/kubernetes/role/external-secrets \
   bound_service_account_names=external-secrets \
   bound_service_account_namespaces=external-secrets \
-  policies=external-secrets-read \
+  policies=external-secrets \
   ttl=1h
 ```
 

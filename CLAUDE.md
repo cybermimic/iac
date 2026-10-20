@@ -81,6 +81,14 @@ Mettre à jour cette ligne à chaque montée de version.
   signal d'alerte (state désynchronisé) — voir
   [ADR-005](docs/adr/ADR-005-terraform-state.md), ne pas appliquer à
   l'aveugle, réconcilier par `terraform import` d'abord.
+- **Vault : policy partagée, jamais réécrite à l'aveugle** — un seul rôle
+  Kubernetes auth (`external-secrets`) sert tout le cluster via une seule
+  policy (`external-secrets`, un chemin par feature). Avant tout
+  changement : `vault policy read external-secrets` d'abord, reporter
+  **tous** les chemins existants dans le nouveau contenu (`vault policy
+  write` remplace tout, n'ajoute rien). Un oubli a cassé 4 `ExternalSecret`
+  pendant 18h le 2026-10-19 (policy réécrite sous un autre nom en ne
+  reportant qu'un seul chemin connu).
 - **Dépendances de features explicites** : si une feature dépend d'une
   autre (ex. `security/vault` dépend de `storage/local-path`), le
   documenter dans son README et le représenter dans le graphe de modules
