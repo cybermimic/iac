@@ -3,6 +3,13 @@ kind: Application
 metadata:
   name: keycloak
   namespace: argocd
+  annotations:
+    # Comparaison par l'API server (dry-run), cohérente avec
+    # ServerSideApply : la comparaison classique voit un faux écart
+    # permanent sur StatefulSet/keycloak-postgres (apiVersion, kind,
+    # volumeMode et status ajoutés par l'API server dans
+    # volumeClaimTemplates).
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   source:
