@@ -1,5 +1,13 @@
 extends: default
 
+# CRDs de l'opérateur Keycloak copiées telles quelles depuis l'upstream
+# (ADR-012) : elles ne respectent pas l'indentation par défaut, et les
+# reformater rendrait chaque mise à jour illisible en revue (diff complet
+# au lieu du vrai changement). kubernetes.yml, aussi vendorisé, reste
+# vérifié : il passe, et il porte une modification locale (toleration).
+ignore: |
+  features/security/keycloak/gitops/operator/*.k8s.keycloak.org-v1.yml
+
 # Les valeurs ci-dessous alignent yamllint sur ce qu'exige ansible-lint
 # (https://docs.ansible.com/projects/lint/rules/yaml/) : sans elles,
 # ansible-lint refuse la config et les deux outils se contredisent.
