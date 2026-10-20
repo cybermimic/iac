@@ -71,8 +71,14 @@ vault write auth/kubernetes/role/external-secrets \
   bound_service_account_names=external-secrets \
   bound_service_account_namespaces=external-secrets \
   policies=external-secrets \
+  audience=vault \
   ttl=1h
 ```
+
+`audience=vault` doit correspondre à `audiences` dans
+`gitops/clustersecretstore.yaml` : Vault refuse alors tout jeton qui n'a
+pas été émis pour lui (un jeton de service account ordinaire, par
+exemple).
 
 Un seul rôle Kubernetes auth pour tout le cluster (volontairement
 générique) ; à affiner en un rôle par application (policies distinctes,
@@ -121,5 +127,12 @@ ressources : `kubectl -n argocd delete application external-secrets
 - `ClusterSecretStore` en erreur `permission denied` → le rôle Vault
   Kubernetes n'est pas configuré ou la policy ne couvre pas le chemin lu :
   revoir la section "Configuration Vault requise" ci-dessus.
+- `ClusterSecretStore` en erreur `invalid audience` (ou `permission
+  denied` sur `auth/kubernetes/login`) juste après un changement →
+  `audience` du rôle Vault et `audiences` du `ClusterSecretStore` ne
+  correspondent plus. Comparer `vault read
+  auth/kubernetes/role/external-secrets` (opérateur) avec
+  `gitops/clustersecretstore.yaml`. Les `Secret` déjà créés restent en
+  place pendant ce temps, seule leur mise à jour échoue.
 - `ExternalSecret` qui ne matérialise pas de `Secret` →
   `kubectl describe externalsecret <nom>` donne la raison exacte.
