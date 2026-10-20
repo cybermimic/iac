@@ -1,7 +1,7 @@
 # Plan — accueillir inner-riddle sur la plateforme
 
-**Statut : en cours** (mis à jour le 2026-10-12, après acceptation des
-ADR-009, 010 et 011 et abandon du DNS local). Chaque étape suit la règle
+**Statut : en cours** (mis à jour le 2026-10-20 : `v0.2.0` en
+production, runners actifs ; étape 9, connexion par Keycloak, préparée). Chaque étape suit la règle
 du repo : code → `plan` relu → `apply` (ou synchronisation ArgoCD) avec
 l'accord de l'opérateur.
 
@@ -58,7 +58,7 @@ Chemins décidés le 2026-10-12, lus par External Secrets (rôle
 
 | Chemin (`secret/…`, kv-v2) | Propriétés | Consommateur |
 |---|---|---|
-| `inner-riddle/auth` | `accounts`, `session_secret` | application (noms imposés par son chart) |
+| `inner-riddle/auth` | `session_secret`, `accounts` (mode `accounts`), `oidc_client_secret` (mode `oidc`, lu aussi par `keycloak-config-cli`) | application (noms imposés par son chart) |
 | `registry/htpasswd` | `htpasswd` (2 lignes : compte d'écriture + compte de lecture) | Zot |
 | `registry/push` | `username`, `password` | référence pour les secrets GitHub du dépôt inner-riddle |
 | `registry/pull` | `username`, `password` | `imagePullSecret` du cluster |
@@ -237,7 +237,12 @@ jetons acceptés à ceux émis pour Vault.
   ansible_become_exe=sudo.ws` : sudo-rs, voir `bootstrap/README.md`) ;
   `curl https://192.168.1.242/v2/` sans `--cacert` → `401` (TLS approuvé).
 
-### 6. Runners ARC — code livré (2026-10-13), attend la GitHub App
+### 6. Runners ARC — ✅ fait
+
+GitHub App créée et rangée dans Vault, variables et secrets du dépôt
+inner-riddle en place : la CI et le workflow `Release` tournent sur le
+scale set `homelab` (depuis #3 : `minRunners: 1`, `maxRunners: 2`). Détail
+de la procédure conservé ci-dessous.
 
 - ✅ `delivery/actions-runners` (ArgoCD) : contrôleur ARC 0.15.0 + scale
   set `homelab` pour `cybermimic/inner-riddle`, DinD (images épinglées :
@@ -269,7 +274,10 @@ jetons acceptés à ceux émis pour Vault.
   - `maxRunners: 1` : les jobs de la CI passent les uns après les autres.
   Le workflow `Release` publie alors à chaque étiquette `vX.Y.Z`.
 
-### 7. Application inner-riddle — code livré (2026-10-13), attend la version v0.1.0
+### 7. Application inner-riddle — ✅ fait
+
+Déployée en `v0.1.1` puis `v0.2.0` (#4), mode `accounts`. Détail de la
+procédure conservé ci-dessous.
 
 - ✅ Clé de déploiement en lecture seule ajoutée au dépôt et rangée dans
   Vault : ArgoCD lit le dépôt (seule erreur restante : l'étiquette
@@ -302,7 +310,10 @@ jetons acceptés à ceux émis pour Vault.
   Tant que l'étiquette n'existe pas, l'Application affiche une erreur de
   comparaison : c'est attendu.
 
-### 8. Mise en ligne
+### 8. Mise en ligne — ✅ en ligne (certificat Let's Encrypt de production)
+
+Points 1 à 3 faits (HTTP-01 validé en staging le 2026-10-16, puis passage
+à `letsencrypt`). Points 4 et 5 : vérifications de l'opérateur.
 
 Suivie par le ticket IR-043 d'inner-riddle :
 
@@ -318,6 +329,34 @@ Suivie par le ticket IR-043 d'inner-riddle :
 5. 👤 depuis le LAN : vérifier que `https://inner-riddle.cybermimic.com`
    répond (NAT en épingle de la Freebox) ; sinon entrée `hosts` vers
    `192.168.1.240`.
+
+### 9. Connexion par Keycloak (v0.3.0, mode `oidc`) — préparé, attend l'étiquette `v0.3.0`
+
+`gitops/apps/inner-riddle.yaml` : `targetRevision: v0.3.0`, `auth.mode:
+oidc`, `auth.mapsOwner: victor`, `oidc.issuer:
+https://auth.cybermimic.com/realms/inner-riddle` (pas de `discoveryUrl` :
+Keycloak n'a pas `hostname-backchannel-dynamic`, le backend lit la
+découverte par l'adresse publique, donc par le NAT en épingle de la
+Freebox — à vérifier depuis le pod). La propriété Vault du secret client
+est `oidc_client_secret` (nom lu par le chart d'inner-riddle), aussi pour
+l'`ExternalSecret` de `keycloak-config-cli`.
+
+Ordre des actions de l'opérateur :
+
+1. 👤 **avant la fusion** (l'Application `keycloak` se synchronise toute
+   seule) : `vault kv patch secret/inner-riddle/auth oidc_client_secret=-`
+   avec la valeur actuelle de `oidc-client-secret` (entrée standard) ;
+   supprimer l'ancienne clé seulement après avoir vérifié la synchro de
+   Keycloak ;
+2. 👤 étiquette `v0.3.0` publiée par le workflow `Release` ;
+3. 👤 sauvegarde juste avant la synchro ;
+4. 👤 fusion, synchro de `keycloak-config-cli`, puis de l'Application
+   inner-riddle (manuelle, diff relu) ;
+5. 👤 `victor` se connecte **en premier** ; `kubectl -n inner-riddle exec
+   deploy/inner-riddle-backend -- inner-riddle users` doit lui attribuer
+   les cartes existantes ;
+6. 👤 le thérapeute se connecte une fois, ensuite seulement `victor` lui
+   partage la carte.
 
 ## Mises à jour de documentation attendues
 
