@@ -141,7 +141,7 @@ chart, IR-045) : realm `inner-riddle`, client confidentiel `inner-riddle`
 (redirection exacte `https://inner-riddle.cybermimic.com/api/auth/callback`,
 post-logout `https://inner-riddle.cybermimic.com/`), émetteur
 `https://auth.cybermimic.com/realms/inner-riddle`, secret du client dans
-Vault (`inner-riddle/auth`, clé `oidc-client-secret`, même
+Vault (`inner-riddle/auth`, clé `oidc_client_secret`, même
 `ExternalSecret` que `session_secret`). La bascule de
 `gitops/apps/inner-riddle.yaml` (`auth.mode: oidc` + `oidc.*`) se fait
 seulement une fois le realm et les comptes réels en place — un

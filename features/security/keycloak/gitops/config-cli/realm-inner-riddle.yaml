@@ -26,7 +26,7 @@ data:
         publicClient: false
         # Substitution par keycloak-config-cli depuis une variable
         # d'environnement du Job (secret Vault inner-riddle/auth, clé
-        # oidc-client-secret — jamais une valeur en dur ici).
+        # oidc_client_secret — jamais une valeur en dur ici).
         secret: "${INNER_RIDDLE_CLIENT_SECRET}"
         protocol: openid-connect
         standardFlowEnabled: true
