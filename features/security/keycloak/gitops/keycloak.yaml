@@ -36,6 +36,20 @@ spec:
     httpEnabled: true # backend Traefik (public), TLS terminé par l'ingress
     tlsSecret: keycloak-admin-tls # certificat CA interne, pour le Service LoadBalancer admin ci-dessous
 
+  # Traefik termine le TLS public : sans ces réglages, Keycloak se croit en
+  # http:// et refuse les échanges de jeton faits depuis le navigateur
+  # (console de compte, client public) avec un 403 « Invalid origin »
+  # (rencontré le 2026-10-20).
+  proxy:
+    headers: xforwarded
+  additionalOptions:
+    # X-Forwarded-* acceptés seulement depuis les pods (Traefik). L'accès
+    # admin (192.168.1.245, LoadBalancer) arrive avec l'IP du nœud après
+    # SNAT, ou celle d'un poste du LAN : il ne peut pas usurper ces
+    # en-têtes. CIDR = pool Calico (docs/operations.md).
+    - name: proxy-trusted-addresses
+      value: 10.244.0.0/16
+
   # Ingress fourni par l'opérateur désactivé : on écrit les nôtres
   # (ingress.yaml pour le public, service-admin.yaml pour l'admin), pour
   # garantir que /admin et /realms/master ne sont jamais exposés par

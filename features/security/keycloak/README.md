@@ -117,6 +117,20 @@ serveur seul — elles vivent dans PostgreSQL.
 
 ## Troubleshooting
 
+- Console de compte (`https://auth.cybermimic.com/realms/<realm>/account`)
+  en erreur « server responded with an invalid status », `POST
+  …/openid-connect/token` → `403 {"error":"Invalid origin"}`, et journaux
+  `Non-secure context detected … originated from a proxy` → Keycloak ne lit
+  pas les en-têtes `X-Forwarded-*` de Traefik et se croit en `http://`.
+  Rencontré le 2026-10-20 : le CR porte maintenant `proxy.headers:
+  xforwarded` et `proxy-trusted-addresses` limité au CIDR des pods.
+  Vérification sans compte : `curl -H "Origin: https://auth.cybermimic.com"
+  -d grant_type=authorization_code -d code=bidon -d client_id=account-console
+  -d redirect_uri=https://auth.cybermimic.com/realms/inner-riddle/account
+  https://auth.cybermimic.com/realms/inner-riddle/protocol/openid-connect/token`
+  doit répondre `400 invalid_grant`, pas `403`. Les applications
+  confidentielles (inner-riddle) ne sont pas touchées : elles échangent le
+  code de serveur à serveur, sans `Origin`.
 - Connexion à une application refusée après le retour de Keycloak
   (« la connexion n'a pas abouti »), journaux Keycloak
   `CODE_TO_TOKEN_ERROR … error="invalid_client_credentials"` → le secret
