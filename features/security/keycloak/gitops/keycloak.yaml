@@ -23,9 +23,13 @@ spec:
       secret: keycloak-admin
 
   hostname:
-    hostname: auth.cybermimic.com
+    # Hostname v2 exige la cohérence : si "admin" est une URL complète,
+    # "hostname" doit l'être aussi (sinon Keycloak refuse de démarrer :
+    # "hostname must be set to a URL when hostname-admin is set",
+    # rencontré au premier déploiement, 2026-10-19).
+    hostname: https://auth.cybermimic.com
     # Console d'administration sur l'IP LAN dédiée, jamais sur le nom
-    # public (ADR-012). Hostname v2 : accepte une URL complète.
+    # public (ADR-012).
     admin: https://192.168.1.245:8443
 
   http:
