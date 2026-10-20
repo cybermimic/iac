@@ -47,6 +47,13 @@ spec:
                   key: password
             - name: IMPORT_VARSUBSTITUTION_ENABLED
               value: "true"
+            # Par défaut, un realm dont le fichier n'a pas changé n'est pas
+            # réimporté (empreinte gardée dans Keycloak) : une valeur venue
+            # de Vault (secret du client OIDC) n'était jamais corrigée.
+            # Rencontré le 2026-10-20 (invalid_client_credentials). L'import
+            # est idempotent et les realms sont petits : on réimporte tout.
+            - name: IMPORT_CACHE_ENABLED
+              value: "false"
             - name: INNER_RIDDLE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
