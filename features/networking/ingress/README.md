@@ -129,6 +129,15 @@ cluster le temps de la réinstallation.
 - Une application publique répond `404` → vérifier que son namespace est
   dans `public_namespaces` et que son Ingress déclare
   `ingressClassName: traefik`.
+- Ingress sans `ADDRESS` et Application ArgoCD bloquée en `Progressing`,
+  journaux Traefik `Error while updating ingress status … namespace is not
+  within watched namespaces` → Traefik essaie de recopier le status de son
+  propre Service (`publishedService`, défaut du chart), qui est dans le
+  namespace `traefik`, hors de `public_namespaces`. Rencontré le
+  2026-10-20 : le module désactive `publishedService` et publie l'IP fixe
+  (`ingressEndpoint.ip = load_balancer_ip`). Ne pas ajouter `traefik` à
+  `public_namespaces` pour contourner (ADR-009). Le routage n'était pas
+  touché, seulement la santé affichée.
 
 - `EXTERNAL-IP` en `<pending>` → IP hors de la plage MetalLB, ou déjà
   attribuée à un autre Service : `kubectl -n traefik describe svc traefik`
