@@ -14,11 +14,23 @@ spec:
   project: default
   sources:
     - repoURL: git@github.com:cybermimic/inner-riddle.git # accès : repositories/inner-riddle-repo.yaml
-      targetRevision: v0.2.0 # version déployée (étiquette publiée par la CI)
+      targetRevision: v0.3.0 # version déployée (étiquette publiée par la CI)
       path: deploy/chart
       helm:
         valuesObject:
           host: inner-riddle.cybermimic.com
+          # Connexion par Keycloak (ADR-012), realm inner-riddle.
+          auth:
+            mode: oidc
+            # preferred_username Keycloak de l'opérateur : à sa première
+            # connexion, ce compte reprend les cartes encore sans accès
+            # (créées avant les droits par carte, IR-046).
+            mapsOwner: victor
+          oidc:
+            # Pas de discoveryUrl : Keycloak n'a pas
+            # hostname-backchannel-dynamic, le backend lit donc la
+            # découverte à l'adresse publique (NAT en épingle de la Freebox).
+            issuer: https://auth.cybermimic.com/realms/inner-riddle
           image:
             registry: 192.168.1.242
           imagePullSecrets:
@@ -34,7 +46,7 @@ spec:
             secretStoreRef:
               name: vault
               kind: ClusterSecretStore
-            remoteKey: inner-riddle/auth # propriétés accounts et session_secret
+            remoteKey: inner-riddle/auth # mode oidc : propriétés session_secret et oidc_client_secret (accounts n'est plus lu)
           networkPolicy:
             ingressNamespaces: [traefik]
           # Nœud unique, qui est aussi control-plane (même besoin que les

@@ -50,7 +50,7 @@ Avant que `ClusterSecretStore vault` puisse les lire, dans Vault :
 ```bash
 vault kv put secret/keycloak/postgres username=keycloak password=<généré>
 vault kv put secret/keycloak/admin username=admin password=<généré>
-vault kv patch secret/inner-riddle/auth oidc-client-secret=<généré>
+vault kv patch secret/inner-riddle/auth oidc_client_secret=<généré>
 ```
 
 **Et** étendre la policy du rôle Kubernetes auth `external-secrets` à
@@ -61,7 +61,7 @@ au premier déploiement, 2026-10-19). Procédure complète :
 « Configuration Vault requise ».
 
 `inner-riddle/auth` existe déjà (clés `accounts`, `session_secret`,
-`oidc-client-secret` ajoutée ici) — `vault kv patch`, pas `put`, pour ne
+`oidc_client_secret` ajoutée ici) — `vault kv patch`, pas `put`, pour ne
 pas écraser les clés existantes. Protéger le compte `admin` par 2FA dès la
 première connexion sur `https://192.168.1.245:8443`.
 
@@ -156,7 +156,7 @@ serveur seul — elles vivent dans PostgreSQL.
 - `keycloak-config-cli` en échec → `kubectl -n keycloak logs
   job/keycloak-config-cli` ; vérifier que `INNER_RIDDLE_CLIENT_SECRET`
   n'est pas vide (`inner-riddle/auth` doit déjà avoir la clé
-  `oidc-client-secret` dans Vault avant le premier sync).
+  `oidc_client_secret` dans Vault avant le premier sync).
 - Certificat navigateur non reconnu sur `https://192.168.1.245:8443` → CA
   interne pas installée sur ce poste (voir `security/cert-manager`).
 - `Service` admin qui ne sélectionne aucun pod (`kubectl -n keycloak get
