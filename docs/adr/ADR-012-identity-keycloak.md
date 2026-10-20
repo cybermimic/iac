@@ -107,6 +107,11 @@ Configuration des realms :
   que les autres données tant qu'il n'y a pas de stockage objet.
 - Un futur SSO des outils internes (ArgoCD, Vault) passerait par un realm
   dédié, servi sur l'adresse LAN seulement.
+- Le realm `master` a sa propre `frontendUrl` pointée sur l'adresse admin
+  (`https://192.168.1.245:8443`) : sans ça, Keycloak construit ses URLs
+  OIDC (connexion de la console, 3p-cookies) avec le `hostname` public,
+  qui n'expose pas `master`, et la console reste bloquée au chargement
+  (rencontré le 2026-10-20, voir le README de la feature).
 
 ## Décision
 

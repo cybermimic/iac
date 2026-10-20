@@ -1,0 +1,20 @@
+# Realm master : administration uniquement, jamais de client/utilisateur
+# applicatif dedans. Seul réglage nécessaire : forcer les URLs OIDC du
+# realm (connexion de la console, 3p-cookies) sur l'IP admin plutôt que
+# sur le nom public — sans ça, Keycloak les construit avec le hostname
+# public (ADR-012), qui n'expose pas /realms/master (404 au chargement de
+# la console, rencontré le 2026-10-20, corrigé une première fois à la
+# main avec kcadm avant d'être versionné ici).
+#
+# Volontairement minimal : aucune clé users/clients/roles — keycloak-config-cli
+# ne touche jamais à une section absente du fichier, donc rien d'autre
+# dans master n'est géré par ce repo.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-master
+data:
+  master.yaml: |
+    realm: master
+    attributes:
+      frontendUrl: https://192.168.1.245:8443
