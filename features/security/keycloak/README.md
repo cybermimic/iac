@@ -117,6 +117,16 @@ serveur seul — elles vivent dans PostgreSQL.
 
 ## Troubleshooting
 
+- Application `keycloak` en `OutOfSync` permanent sur
+  `StatefulSet/keycloak-postgres`, alors qu'un `kubectl diff
+  --server-side` du manifeste ne montre rien → faux écart de la
+  comparaison classique d'ArgoCD : l'API server ajoute `apiVersion`,
+  `kind`, `volumeMode` et `status` dans `volumeClaimTemplates`. Rencontré
+  le 2026-10-20 ; l'Application porte depuis l'annotation
+  `argocd.argoproj.io/compare-options: ServerSideDiff=true`
+  (`gitops/apps/keycloak.yaml`). Ne pas ignorer tout
+  `volumeClaimTemplates` (`ignoreDifferences`) : un vrai changement de
+  taille deviendrait invisible.
 - Console d'administration qui charge puis reste bloquée, le navigateur
   demandant `https://auth.cybermimic.com/realms/master/protocol/openid-connect/3p-cookies/step1.html`
   (404, normal — `ingress-public.yaml` ne route que `/realms/inner-riddle`
