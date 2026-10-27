@@ -64,7 +64,8 @@ single-node.
 | `security/external-secrets` | ✅ Déployé (ArgoCD), connecté à Vault |
 | `delivery/registry` (Zot) | ✅ Livré par ArgoCD, `https://192.168.1.242` |
 | `security/keycloak` (fournisseur d'identité) | ⏳ Code prêt (`gitops/apps/keycloak.yaml`), pas encore appliqué — attend la config Vault opérateur ([ADR-012](adr/ADR-012-identity-keycloak.md)) |
-| `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
+| `storage/object-storage` (Garage) | ⏳ Code prêt (`gitops/apps/object-storage.yaml`), pas encore synchronisé — attend le secret RPC et la policy Vault ([README](../features/storage/object-storage/README.md)) |
+| `observability/*`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ⏳ Livré par ArgoCD, attend la GitHub App ([ADR-011](adr/ADR-011-ci-runners.md)) |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |
 
