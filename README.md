@@ -51,6 +51,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `security/external-secrets` | ✅ Déployé par ArgoCD, `ClusterSecretStore` `vault` valide (Vault en TLS sur `192.168.1.243`) |
 | `delivery/registry` (Zot) | ✅ Déployé sur `https://192.168.1.242`, approuvé par containerd ([ADR-010](docs/adr/ADR-010-container-registry.md)) |
 | `security/keycloak` (fournisseur d'identité) | ✅ Déployé par ArgoCD — realm `inner-riddle` public sur `https://auth.cybermimic.com`, console d'administration sur `https://192.168.1.245:8443` ([ADR-012](docs/adr/ADR-012-identity-keycloak.md)) |
+| `compute/fleet-manager` (hôtes gérés) | ⏳ Playbook écrit et vérifié (ansible-lint, comportement testé en conteneur), jamais exécuté : attend la machine A ([README](features/compute/fleet-manager/README.md), [ADR-013](docs/adr/ADR-013-storage-tiers-and-power.md)) |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ✅ Livré par ArgoCD, scale set `homelab` actif pour inner-riddle (1 runner prêt, 2 au plus) ([ADR-011](docs/adr/ADR-011-ci-runners.md)) |
 | Application inner-riddle | ✅ `v0.2.0` en production sur `https://inner-riddle.cybermimic.com` (sync manuelle, comptes locaux) — passage en `v0.3.0` + connexion Keycloak préparé, attend l'étiquette — [plan inner-riddle](docs/plans/inner-riddle.md) |

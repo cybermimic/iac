@@ -1,0 +1,118 @@
+---
+# Prépare une machine gérée par fleet-manager (ADR-013) : Wake-on-LAN
+# actif à chaque démarrage, et l'exception d'extinction (section 6) — un
+# compte dédié dont la clé SSH ne peut lancer qu'une commande, `systemctl
+# poweroff`, autorisée sans mot de passe par une seule ligne sudoers.
+#
+# Configuration d'hôte, donc Ansible et pas Terraform (ADR-001). Relançable.
+# Ne touche pas à la configuration réseau (netplan) : une erreur couperait
+# l'accès à la machine.
+#
+#   ansible-playbook -i <inventaire> features/compute/fleet-manager/ansible/playbook.yml -K
+#
+# Variables par machine (inventaire local, jamais commité) :
+#   fleet_manager_wol_interface   interface câblée, ex. enp0s31f6
+#   fleet_manager_ssh_public_key  clé publique du compte (la clé privée est dans Vault)
+- name: Prepare hosts managed by fleet-manager (Wake-on-LAN, power-off exception)
+  hosts: fleet_managed
+  become: true
+  vars:
+    fleet_manager_user: fleet-manager
+    fleet_manager_poweroff: /usr/bin/systemctl poweroff
+  tasks:
+    - name: Refuse a control-plane node (never managed by fleet-manager)
+      ansible.builtin.assert:
+        that:
+          - "'k8s_control_plane' not in group_names"
+          - fleet_manager_wol_interface is defined
+          - fleet_manager_ssh_public_key is defined
+        fail_msg: >-
+          Nœud de plan de contrôle, ou variable manquante
+          (fleet_manager_wol_interface, fleet_manager_ssh_public_key).
+
+    # Le groupe d'inventaire peut manquer : on vérifie aussi sur la machine
+    # elle-même qu'elle n'héberge pas le serveur d'API Kubernetes.
+    - name: Look for a kube-apiserver static pod manifest
+      ansible.builtin.stat:
+        path: /etc/kubernetes/manifests/kube-apiserver.yaml
+      register: fleet_manager_apiserver
+
+    - name: Refuse a host that runs the Kubernetes API server
+      ansible.builtin.assert:
+        that: not fleet_manager_apiserver.stat.exists
+        fail_msg: Cette machine héberge kube-apiserver (plan de contrôle) — jamais gérée.
+
+    - name: Install ethtool
+      ansible.builtin.apt:
+        name: ethtool
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Hold ethtool package (never auto-upgrade silently)
+      ansible.builtin.dpkg_selections:
+        name: ethtool
+        selection: hold
+
+    # Le BIOS active le Wake-on-LAN, mais certains pilotes le désactivent au
+    # démarrage du système : on le réactive à chaque boot (paquet magique, « g »).
+    - name: Install the Wake-on-LAN unit
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/fleet-manager-wol.service
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Enable Wake-on-LAN (magic packet) for fleet-manager
+          After=network-pre.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/sbin/ethtool -s {{ fleet_manager_wol_interface }} wol g
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Restart Wake-on-LAN unit
+
+    - name: Enable the Wake-on-LAN unit
+      ansible.builtin.systemd:
+        name: fleet-manager-wol.service
+        enabled: true
+        daemon_reload: true
+
+    - name: Create the fleet-manager account (no password)
+      ansible.builtin.user:
+        name: "{{ fleet_manager_user }}"
+        system: true
+        # Un shell est nécessaire : sshd exécute la commande forcée par lui.
+        shell: /bin/sh
+        password: "!"
+        create_home: true
+
+    # `restrict` : ni terminal, ni redirection de ports, d'agent ou X11 ;
+    # `command=` : la seule commande possible, quoi que demande le client.
+    - name: Authorize the fleet-manager key for power-off only
+      ansible.posix.authorized_key:
+        user: "{{ fleet_manager_user }}"
+        key: "{{ fleet_manager_ssh_public_key }}"
+        key_options: 'restrict,command="sudo {{ fleet_manager_poweroff }}"'
+        exclusive: true
+
+    - name: Allow power-off only, without password
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/fleet-manager
+        owner: root
+        group: root
+        mode: "0440"
+        content: |
+          # Exception d'extinction (ADR-013, section 6) : cette seule commande.
+          {{ fleet_manager_user }} ALL=(root) NOPASSWD: {{ fleet_manager_poweroff }}
+        validate: /usr/sbin/visudo -cf %s
+
+  handlers:
+    - name: Restart Wake-on-LAN unit
+      ansible.builtin.systemd:
+        name: fleet-manager-wol.service
+        state: restarted
+        daemon_reload: true
