@@ -123,6 +123,17 @@ Freebox), à retirer pour revenir à l'état d'origine (`sudo`) :
   jsonpath='{..image}'`) avec vérification du checksum : voir la section
   « Prérequis » du runbook.
 
+## Bilan de santé
+
+`./hack/status.py` (lecture seule, aucun secret affiché) : nœud, lien réseau
+et coupures des dernières 24 h, disque et RAM (seuils ci-dessus), Vault
+scellé ou non, `Application` ArgoCD, `ClusterSecretStore` et
+`ExternalSecret`, certificats (alerte à 21 jours), CronJob (dernier succès,
+dernière exécution en échec), redémarrages de pods des dernières 24 h.
+`OK` / `WARN` / `FAIL`, code de retour 1 au moindre `FAIL`. À lancer après
+chaque redémarrage du NucBox et à la fin d'une reconstruction ; les
+contrôles de l'hôte ne tournent que sur le nœud lui-même.
+
 ## Checklist avant de reprendre le travail sur une nouvelle machine
 
 1. Lire `CLAUDE.md`.
