@@ -75,16 +75,12 @@ par an pour sa première source.
 Toutes les commandes se lancent **sur le NucBox**, par l'opérateur. Aucune
 valeur secrète n'est affichée ni passée en clair dans l'historique.
 
-**1. Policy Vault** : lire d'abord, puis réécrire avec **tous** les chemins
-existants plus `object-storage` et `fact-check` (incident du 2026-10-19 :
-`vault policy write` remplace tout) :
-
-```bash
-kubectl -n vault exec vault-0 -- vault policy read external-secrets
-# reporter chaque ligne existante, puis ajouter :
-#   path "secret/data/object-storage/*" { capabilities = ["read"] }
-#   path "secret/data/fact-check/*"     { capabilities = ["read"] }
-```
+**1. Policy Vault** : cette PR ajoute `object-storage/*` et `fact-check/*`
+au fichier versionné
+[`features/security/vault/policies/external-secrets.hcl`](../../security/vault/policies/external-secrets.hcl).
+Comparer avec la policy réelle (seules ces deux lignes doivent différer),
+puis appliquer depuis le fichier — procédure dans
+[security/external-secrets](../../security/external-secrets/README.md#modifier-la-policy).
 
 **2. Secret RPC** :
 

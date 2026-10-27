@@ -15,3 +15,5 @@ path "secret/data/registry/*"        { capabilities = ["read"] }
 path "secret/data/actions-runners/*" { capabilities = ["read"] }
 path "secret/data/argocd/*"          { capabilities = ["read"] }
 path "secret/data/keycloak/*"        { capabilities = ["read"] }
+path "secret/data/object-storage/*"  { capabilities = ["read"] }
+path "secret/data/fact-check/*"      { capabilities = ["read"] }
