@@ -73,7 +73,7 @@ après une restauration, c'est la valeur restaurée qui gagne.
 
 | Option | Principe | Pour | Contre |
 |---|---|---|---|
-| **D1. Stockage `raft` + instantanés (recommandé)** | Migration `file` → `raft` (`vault operator migrate`, Vault arrêté), puis un `CronJob` prend un instantané (`vault operator raft snapshot save`) et l'envoie dans Garage, puis vers les niveaux `cold` et `frozen` ([ADR-013](ADR-013-storage-tiers-and-power.md)) | Instantané cohérent à chaud ; **inutilisable sans les clés d'unseal** (données chiffrées), donc stockable hors de Vault sans risque ; couvre aussi les secrets « tiers » | Migration d'un composant en production : opération planifiée avec l'opérateur, sauvegarde du volume avant. Le `CronJob` a besoin d'un rôle Kubernetes auth dédié (`vault-backup`), limité à `sys/storage/raft/snapshot` |
+| **D1. Stockage `raft` + instantanés (recommandé)** | Migration `file` → `raft` (`vault operator migrate`, Vault arrêté), puis un `CronJob` prend un instantané (`vault operator raft snapshot save`) et l'envoie dans Garage, puis vers les niveaux `cold` et `frozen` ([ADR-015](ADR-015-storage-tiers-and-power.md)) | Instantané cohérent à chaud ; **inutilisable sans les clés d'unseal** (données chiffrées), donc stockable hors de Vault sans risque ; couvre aussi les secrets « tiers » | Migration d'un composant en production : opération planifiée avec l'opérateur, sauvegarde du volume avant. Le `CronJob` a besoin d'un rôle Kubernetes auth dédié (`vault-backup`), limité à `sys/storage/raft/snapshot` |
 | D2. Copie du volume `file` | Copier le dossier de données | Pas de migration | Copie à chaud incohérente ; Vault doit être arrêté (donc rescellé) pour une copie propre |
 | D3. Aucune sauvegarde | — | — | Cas « avec données » impossible |
 
