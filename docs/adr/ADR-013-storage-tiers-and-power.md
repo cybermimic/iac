@@ -1,8 +1,9 @@
 # ADR-013 — Niveaux de stockage et allumage des machines à la demande (fleet-manager)
 
-**Statut : Acceptée** (2026-10-27) pour les principes. Le matériel, les
-moyens d'allumage de chaque machine et le support `frozen` restent à
-choisir (voir « Décisions reportées »).
+**Statut : Acceptée** (2026-10-27) pour les principes. Les modèles exacts
+de machines, le moyen d'allumage de chacune et le support `frozen` restent
+à choisir (voir « Décisions reportées ») ; les achats suivent le
+[plan fleet-manager](../plans/fleet-manager.md).
 
 ## Contexte
 
@@ -69,27 +70,47 @@ empreinte), plutôt qu'un format propre qui enfermerait les données.
 | Dépôt | Contient |
 |---|---|
 | `cybermimic/fleet-manager` | Le code, ses tests, ses images, son chart Helm, sa CI (runners ARC, dépôt privé — [ADR-011](ADR-011-ci-runners.md)) |
-| `cybermimic/iac` (ce repo) | Cette ADR ; la feature qui déploie fleet-manager (`Application` ArgoCD, `ExternalSecret`) ; le rôle Ansible des machines gérées (Wake-on-LAN de la carte réseau, compte dédié, stockage de la machine `cold`) |
+| `cybermimic/iac` (ce repo) | Cette ADR ; la feature qui déploie fleet-manager (`Application` ArgoCD, `ExternalSecret`) ; le rôle Ansible des machines gérées (Wake-on-LAN de la carte réseau, compte dédié pour l'extinction) |
 
 Aucun code de fleet-manager dans ce repo, comme pour toute application.
 
-### 4. Une machine éteinte par défaut reste hors du cluster de stockage
+### 4. Une machine éteinte par défaut est un nœud Kubernetes à part
 
-Un cluster Garage dont un nœud est éteint fonctionne en mode dégradé. Une
-machine `cold` est donc **un hôte hors de Kubernetes**, configuré par
-Ansible ([ADR-001](ADR-001-terraform-scope.md) : la configuration d'hôte
-ne passe jamais par Terraform), avec son propre stockage indépendant du
-Garage `hot`/`warm` (instance Garage séparée ou simple cible SFTP, à
-choisir).
+Une machine `cold` **est un nœud Kubernetes**, rejoint comme les autres
+(système configuré par Ansible, [ADR-001](ADR-001-terraform-scope.md)). Ce
+qui la distingue :
 
-Les machines de **calcul** sont un cas différent : un nœud Kubernetes peut
-être éteint s'il est vidé avant (`drain`) et ne porte aucun volume local.
-Piste à évaluer dans une ADR séparée quand un nœud de calcul arrivera :
-laisser `cluster-autoscaler` décider quand ajouter ou retirer un nœud
-selon les pods en attente, en mode fournisseur externe (`externalgrpc`),
-fleet-manager se chargeant seulement d'allumer et d'éteindre. Ce mode
-existe toujours en 2026 ; son évolution (découpage du projet en
-fournisseurs séparés, proposé début 2026) reste à suivre.
+- une *taint* dédiée (`fleet-manager/tier=cold:NoSchedule`) : seuls les
+  pods du niveau `cold` s'y placent ;
+- **sa propre instance Garage**, indépendante du Garage `hot`/`warm`, sur
+  un volume local, pod épinglé au nœud. Un membre éteint mettrait un
+  cluster Garage commun en mode dégradé en permanence ; une instance à
+  part est simplement absente quand le nœud dort ;
+- fleet-manager l'isole (`cordon`), attend la fin des copies, puis
+  l'éteint ; le nœud passe `NotReady`, ce qui est **normal** pour lui (à
+  prendre en compte dans les futures alertes).
+
+Pourquoi dans Kubernetes plutôt qu'à côté : un seul outillage (ArgoCD,
+Helm, External Secrets) pour tous les services, et Ansible limité au
+système des machines, comme pour les autres nœuds.
+
+Contraintes acceptées :
+
+- le certificat client du kubelet (un an) ne se renouvelle que nœud
+  allumé : fleet-manager allume chaque nœud `cold` **au moins une fois par
+  mois**, ce qui sert aussi à vérifier ses disques ;
+- un nœud éteint ne suit pas les montées de version de Kubernetes : il est
+  allumé pour chacune (le kubelet tolère trois versions mineures de
+  retard sur le serveur d'API, pas davantage).
+
+Les machines de **calcul** à la demande suivent la même logique (vidées
+avant extinction, aucun volume local). Piste à évaluer dans une ADR
+séparée quand ce nœud arrivera : laisser `cluster-autoscaler` décider
+quand ajouter ou retirer un nœud selon les pods en attente, en mode
+fournisseur externe (`externalgrpc`), fleet-manager se chargeant seulement
+d'allumer et d'éteindre. Ce mode existe toujours en 2026 ; son évolution
+(découpage du projet en fournisseurs séparés, proposé début 2026) reste à
+suivre.
 
 ### 5. Allumage : un pilote par machine
 
@@ -127,13 +148,25 @@ Garde-fous :
   cours terminées et vérifiées, et, pour un nœud Kubernetes, après un
   `drain` réussi.
 
+### 7. Réseau
+
+- **Un switch 2,5 GbE administrable** (VLAN 802.1Q, sans ventilateur,
+  ports SFP+ pour un passage à 10 Gb/s entre nœuds de stockage plus tard),
+  entre la Freebox et les machines du cluster.
+- Le NucBox (émetteur du Wake-on-LAN) et les machines gérées sont dans le
+  **même réseau** : le paquet magique est une diffusion, il ne traverse
+  pas un routeur.
+- Les interfaces **AMT** passent sur un **VLAN d'administration**, à part :
+  elles donnent le contrôle complet d'une machine.
+- Une **réservation DHCP** par machine gérée sur la Freebox : fleet-manager
+  vise une adresse MAC (Wake-on-LAN) et une IP (AMT, SSH) stables.
+
 ## Décisions reportées
 
-- **Matériel** des niveaux `warm` et `cold`, et nombre de machines (voir
-  l'estimation de capacité et les seuils d'[operations.md](../operations.md)).
+- **Modèles exacts** des machines et du switch, au moment de chaque achat
+  ([plan fleet-manager](../plans/fleet-manager.md)).
 - **Moyen d'allumage** de chaque machine, selon le matériel choisi.
-- **Stockage de la machine `cold`** : instance Garage indépendante ou cible
-  SFTP.
+- **Niveau `warm`** : pas de machine dédiée dans le POC (voir le plan).
 - **Support `frozen`** (disque hors ligne, second site), fréquence de
   rafraîchissement, test de restauration.
 - **Noms des niveaux** : `hot` / `warm` / `cold` / `frozen` proposés,
