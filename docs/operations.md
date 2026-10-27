@@ -123,6 +123,13 @@ Freebox), à retirer pour revenir à l'état d'origine (`sudo`) :
   jsonpath='{..image}'`) avec vérification du checksum : voir la section
   « Prérequis » du runbook.
 
+## Reconstruire la plateforme
+
+[Runbook de reconstruction](runbooks/rebuild.md) — **brouillon jamais
+exécuté** : ordre des étapes (hôte, cluster, Terraform en deux temps, CA,
+Vault, secrets, ArgoCD, accès externes) et ce qui manque pour une
+restauration avec données.
+
 ## Checklist avant de reprendre le travail sur une nouvelle machine
 
 1. Lire `CLAUDE.md`.
