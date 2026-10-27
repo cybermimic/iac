@@ -64,9 +64,9 @@ single-node.
 | `security/external-secrets` | ✅ Déployé (ArgoCD), connecté à Vault |
 | `delivery/registry` (Zot) | ✅ Livré par ArgoCD, `https://192.168.1.242` |
 | `security/keycloak` (fournisseur d'identité) | ⏳ Code prêt (`gitops/apps/keycloak.yaml`), pas encore appliqué — attend la config Vault opérateur ([ADR-012](adr/ADR-012-identity-keycloak.md)) |
-| `compute/fleet-manager` (hôtes gérés) | ⏳ Playbook écrit et vérifié (ansible-lint, comportement testé en conteneur), jamais exécuté : attend la machine A ([README](../features/compute/fleet-manager/README.md), [ADR-015](adr/ADR-015-storage-tiers-and-power.md)) |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ⏳ Livré par ArgoCD, attend la GitHub App ([ADR-011](adr/ADR-011-ci-runners.md)) |
+| `compute/fleet-manager` (hôtes gérés) | ⏳ Playbook écrit et vérifié (ansible-lint, comportement testé en conteneur), jamais exécuté : attend la machine A ([README](../features/compute/fleet-manager/README.md), [ADR-015](adr/ADR-015-storage-tiers-and-power.md)) |
 | Multi-node, GPU, lifecycle management | ❌ Pas commencé |
 
 Détail par feature : `features/*/README.md`. Limitations connues et faits
