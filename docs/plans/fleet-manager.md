@@ -1,6 +1,7 @@
 # Plan — machines gérées par fleet-manager
 
-**Statut : planifié** (2026-10-27). Décisions dans
+**Statut : temps 1 en attente d'achat** (2026-10-27) — l'opérateur
+signale quand le matériel du temps 1 est acheté. Décisions dans
 [ADR-013](../adr/ADR-013-storage-tiers-and-power.md) ; code dans le dépôt
 privé [`cybermimic/fleet-manager`](https://github.com/cybermimic/fleet-manager).
 
@@ -37,9 +38,10 @@ comportement BIOS/AMT, pièces interchangeables.
 
 ## Temps 1 — stockage `cold`
 
-**Déclencheur** : début du développement de fleet-manager, une fois que
-fact-check produit des données (premier connecteur en service, étape 6 du
-[plan fact-check](fact-check.md)).
+**Déclencheur** : décision de l'opérateur, pour démarrer fleet-manager
+en parallèle de fact-check (dont le premier connecteur, étape 6 du
+[plan fact-check](fact-check.md), fournira les premières données à
+déplacer).
 
 | Achat | Détail | Prix indicatif |
 |---|---|---|
@@ -52,6 +54,14 @@ Total : **~550-700 €** (~660-810 € avec le disque `frozen`).
 
 Travaux (🤖 = agent, 👤 = opérateur) :
 
+0. 🤖 **Seconde recherche avant achat** (prix et disponibilité du moment) :
+   - confirmer sur la fiche PSREF Lenovo du M920q la carte réseau
+     I219-LM, et que l'AMT du modèle accepte une étiquette VLAN ;
+   - confirmer le nombre de VLAN et le firmware à jour du XMG1915-10E ;
+   - confirmer l'API locale (HTTP/RPC) de la Shelly Plug S Gen3 et sa
+     compatibilité avec Matter activé ou non ;
+   - comparer avec un équivalent HP EliteDesk 800 G4 Mini / Dell OptiPlex
+     7060 Micro si le M920q est rare ou cher.
 1. 👤 Switch en place, VLAN d'administration pour AMT, réservations DHCP
    sur la Freebox.
 2. 👤 BIOS de la machine A (Wake-on-LAN, AMT, rallumage au retour du
@@ -74,6 +84,84 @@ Travaux (🤖 = agent, 👤 = opérateur) :
 - l'allumage mensuel (certificat du kubelet, vérification des disques)
   tourne ;
 - consommation mesurée : éteinte, au repos, en copie.
+
+### Préparation (avant réception)
+
+**Adresses** (hors plage DHCP `.2`-`.200` et hors MetalLB `.240`-`.250`,
+voir [platform-overview.md](../platform-overview.md)) :
+
+| Adresse | Qui | Configuré où |
+|---|---|---|
+| `192.168.1.251` | `fleet-cold-01` (machine A) | Freebox → baux statiques |
+| `192.168.1.252` | `fleet-compute-01` (machine B, temps 2) | Freebox → baux statiques |
+| `192.168.1.239` | Switch, interface d'administration | Switch (IP fixe) |
+| `192.168.1.238` | Prise Shelly | Freebox → baux statiques |
+
+**VLAN d'administration (AMT)**, proposé, à valider à la réception :
+
+- VLAN `10`, sous-réseau `10.10.10.0/24` (ne chevauche ni les pods
+  `10.244.0.0/16` ni les Services `10.96.0.0/12`), **sans routeur ni
+  DHCP** : adresses fixes, injoignable depuis le reste du LAN et
+  d'Internet ;
+- AMT de `fleet-cold-01` en `10.10.10.251`, de `fleet-compute-01` en
+  `10.10.10.252` (même dernier octet que sur le LAN) ;
+- le NucBox rejoint ce VLAN par une sous-interface (`10.10.10.253`,
+  configurée par Ansible) : le composant Alimentation de fleet-manager,
+  qui tourne sur le réseau de l'hôte pour le Wake-on-LAN, l'atteint
+  directement ;
+- ports du switch : Freebox en VLAN 1 seul ; NucBox et machines gérées en
+  VLAN 1 non étiqueté + VLAN 10 étiqueté ;
+- si l'AMT du M920q n'accepte pas d'étiquette VLAN : AMT reste sur le
+  LAN, mot de passe fort, et l'isolation est reportée.
+
+**Secrets à ranger dans Vault** (opérateur, valeurs jamais dans Git ni
+dans un chat ; policy `external-secrets` lue d'abord, réécrite avec tous
+les chemins existants) :
+
+| Chemin (`secret/…`) | Propriétés | Quand |
+|---|---|---|
+| `fleet-manager/ssh` | `ssh_private_key` (clé du compte `fleet-manager`, commande forcée) | étape 3 |
+| `fleet-manager/amt-fleet-cold-01` | `username`, `password` | étape 2 |
+| `fleet-manager/shelly` | `password` (authentification locale de la prise) | étape 1 |
+
+**BIOS de chaque machine** (noms d'options Lenovo à confirmer sur place) :
+
+- mettre à jour le BIOS et le firmware Intel ME (AMT a eu des failles
+  corrigées par firmware) ;
+- *After Power Loss* : **Power On** ;
+- *Wake on LAN* : **Automatic** (ou *Primary*) ;
+- *Enhanced Power Saving Mode* (ou équivalent ErP) : **Disabled**, sinon
+  la carte réseau est coupée à l'arrêt ;
+- démarrage sans clavier ni écran, sans arrêt sur erreur ;
+- mot de passe BIOS (gestionnaire de mots de passe de l'opérateur).
+
+**AMT** (menu MEBx, `Ctrl+P` au démarrage) : changer le mot de passe par
+défaut, activer l'accès réseau, IP fixe et VLAN ci-dessus, désactiver ce
+qui ne sert pas (redirection IDE/USB).
+
+**Switch** : mettre à jour le firmware, changer le mot de passe
+d'administration, IP fixe, VLAN ci-dessus.
+
+**Prise Shelly** : mettre à jour le firmware, désactiver le cloud, activer
+l'authentification locale, état au retour du courant : **allumée** (la
+machine redémarre, fleet-manager la rééteint faute de bail).
+
+**Ansible** : ajouter `fleet-cold-01` au `hosts.yml` local (ignoré par
+git), groupe `k8s_nodes`.
+
+## Registre des machines
+
+À remplir à la réception, puis à reporter dans
+[platform-overview.md](../platform-overview.md) à la mise en service. Pas
+de numéro de série ni de mot de passe ici (repo public) ; une adresse MAC
+n'est pas un secret.
+
+| Nom | Rôle | Modèle (type) | CPU | RAM | Disques | MAC LAN | IP LAN | IP AMT | Allumage validé | Mise en service |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `fleet-cold-01` | `cold`, nœud Kubernetes (*taint* `fleet-manager/tier=cold`) | M920q (à relever) | i5-8500T (à confirmer) | 16 Go | NVMe 256 Go + SSD 2 To | — | `192.168.1.251` | `10.10.10.251` | — | — |
+| `fleet-compute-01` | calcul à la demande (temps 2) | M920q (à relever) | — | 32 Go | NVMe 512 Go-1 To | — | `192.168.1.252` | `10.10.10.252` | — | — |
+| switch | cœur du réseau du cluster | Zyxel XMG1915-10E | — | — | — | — | `192.168.1.239` | — | — | — |
+| prise | pilote « prise » de `fleet-cold-01` | Shelly Plug S Gen3 | — | — | — | — | `192.168.1.238` | — | — | — |
 
 ## Temps 2 — calcul à la demande
 
