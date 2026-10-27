@@ -2,7 +2,7 @@
 
 **Statut : temps 1 en attente d'achat** (2026-10-27) — l'opérateur
 signale quand le matériel du temps 1 est acheté. Décisions dans
-[ADR-013](../adr/ADR-013-storage-tiers-and-power.md) ; code dans le dépôt
+[ADR-015](../adr/ADR-015-storage-tiers-and-power.md) ; code dans le dépôt
 privé [`cybermimic/fleet-manager`](https://github.com/cybermimic/fleet-manager).
 
 Les achats se font **en deux temps**, chacun déclenché par un besoin

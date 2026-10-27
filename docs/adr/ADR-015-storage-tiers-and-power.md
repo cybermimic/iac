@@ -1,4 +1,4 @@
-# ADR-013 — Niveaux de stockage et allumage des machines à la demande (fleet-manager)
+# ADR-015 — Niveaux de stockage et allumage des machines à la demande (fleet-manager)
 
 **Statut : Acceptée** (2026-10-27) pour les principes. Les modèles exacts
 de machines, le moyen d'allumage de chacune et le support `frozen` restent
