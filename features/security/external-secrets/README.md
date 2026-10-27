@@ -63,7 +63,13 @@ vault write auth/kubernetes/role/external-secrets \
   ttl=1h
 ```
 
-### Modifier la policy
+Un seul rôle Kubernetes auth pour tout le cluster (volontairement
+générique) ; à affiner en un rôle par application (policies distinctes,
+donc isolation entre applications) seulement si une fuite entre
+applications devient un vrai problème — pas avant (voir `CLAUDE.md`,
+"Ne pas inventer").
+
+## Modifier la policy
 
 La référence est le fichier
 [`features/security/vault/policies/external-secrets.hcl`](../vault/policies/external-secrets.hcl) :
@@ -85,12 +91,6 @@ oubli de chemin a cassé 4 `ExternalSecret` pendant 18 h le 2026-10-19).
    kubectl -n vault exec -i vault-0 -- vault policy write external-secrets - \
      < features/security/vault/policies/external-secrets.hcl
    ```
-
-Un seul rôle Kubernetes auth pour tout le cluster (volontairement
-générique) ; à affiner en un rôle par application (policies distinctes,
-donc isolation entre applications) seulement si une fuite entre
-applications devient un vrai problème — pas avant (voir `CLAUDE.md`,
-"Ne pas inventer").
 
 ## Inputs / Outputs
 

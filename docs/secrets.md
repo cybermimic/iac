@@ -55,6 +55,7 @@ versionnée : [`features/security/vault/policies/external-secrets.hcl`](../featu
 | `fact-check/postgres` | `password` (hexadécimal) | Générée, **liée aux données** | iac #26 |
 | `argocd/repo-fact-check` | `ssh_private_key` | Tiers (clé de déploiement) | iac #26 |
 | `fleet-manager/ssh` | `ssh_private_key` | Générée ; partie publique déployée par Ansible sur les machines gérées | iac #28 |
+| `mail/smtp` | `host`, `port`, `starttls`, `ssl`, `username`, `password`, `from`, `from_name` | **Tiers** (compte SMTP du fournisseur, OVH d'abord) | iac #21 (ADR-013, envoi d'e-mails) |
 
 Chaque PR ajoutera aussi son chemin à la policy versionnée (`fact-check/*`,
 `object-storage/*`, `fleet-manager/*`).
