@@ -93,5 +93,6 @@ sauvegarde**. Sans le disque du NucBox :
 - **à régénérer à la main**, une quinzaine de `vault kv put` éparpillés dans
   les README : tout le reste de la section 2.
 
-Les options pour automatiser la régénération et sauvegarder Vault sont à
-trancher dans une ADR (ADR-014, à rédiger).
+Les options pour automatiser la régénération, sauvegarder Vault et
+conserver la CA sont dans l'[ADR-014](adr/ADR-014-secrets-for-rebuild.md)
+(proposée, à trancher).
