@@ -54,6 +54,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ✅ Livré par ArgoCD, scale set `homelab` actif pour inner-riddle (1 runner prêt, 2 au plus) ([ADR-011](docs/adr/ADR-011-ci-runners.md)) |
 | Application inner-riddle | ✅ `v0.2.0` en production sur `https://inner-riddle.cybermimic.com` (sync manuelle, comptes locaux) — passage en `v0.3.0` + connexion Keycloak préparé, attend l'étiquette — [plan inner-riddle](docs/plans/inner-riddle.md) |
+| Application fact-check | 📝 Planifiée — [dépôt privé](https://github.com/cybermimic/fact-check) créé, conception documentée dans le dépôt — [plan fact-check](docs/plans/fact-check.md) |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)
 pour le détail des décisions déjà prises, et

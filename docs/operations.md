@@ -77,6 +77,22 @@ le rechercher comme référence.
   section 3). Après un reboot, les services qui dépendent de Vault ne
   fonctionnent pas tant que cet unseal n'est pas fait.
 
+## Capacité du nœud et seuils d'extension
+
+Mesure du 2026-10-27 sur le NucBox (`df -h /`, `free -h`) : 4 CPU, ~6 Gi
+de RAM disponibles sur 14 Gi visibles, **76 Go de disque libres** sur
+160 Go (partition racine partagée par le système, containerd et
+local-path).
+
+Ajouter un nœud (ou un disque dédié au stockage) devient une décision à
+prendre, avec une ADR, dès que l'un de ces seuils est atteint :
+
+- disque racine **> 75 %** utilisé ;
+- RAM disponible **< 2 Gi** en régime normal.
+
+fact-check, qui archive les données publiques brutes, est l'application la
+plus susceptible de les atteindre (voir [plan fact-check](plans/fact-check.md)).
+
 ## DNS
 
 Pas de DNS local : la Freebox est le DNS de tout le LAN (configuration
