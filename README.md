@@ -44,6 +44,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé, initialisé, sur `https://192.168.1.243:8200` (TLS de bout en bout, CA interne) — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
+| `compute/fleet-manager` (hôtes gérés) | ⏳ Playbook écrit et vérifié (ansible-lint, comportement testé en conteneur), jamais exécuté : attend la machine A ([README](features/compute/fleet-manager/README.md), [ADR-015](docs/adr/ADR-015-storage-tiers-and-power.md)) |
 | `networking/ingress` (Traefik) | ✅ Ingress **public** sur `192.168.1.240` (classe non par défaut, namespaces autorisés : `inner-riddle`, `keycloak`) + Let's Encrypt (production), ports 80/443 redirigés ([ADR-009](docs/adr/ADR-009-public-exposure.md)) |
 | `networking/lan-dns` (CoreDNS) | 🗑️ Supprimé le 2026-10-12 ([ADR-007](docs/adr/ADR-007-lan-dns.md) abandonné, [incident](docs/incidents/2026-09-28-lan-dns-outage.md)) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
@@ -53,7 +54,6 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `security/keycloak` (fournisseur d'identité) | ✅ Déployé par ArgoCD — realm `inner-riddle` public sur `https://auth.cybermimic.com`, console d'administration sur `https://192.168.1.245:8443` ([ADR-012](docs/adr/ADR-012-identity-keycloak.md)) |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ✅ Livré par ArgoCD, scale set `homelab` actif pour inner-riddle (1 runner prêt, 2 au plus) ([ADR-011](docs/adr/ADR-011-ci-runners.md)) |
-| `compute/fleet-manager` (hôtes gérés) | ⏳ Playbook écrit et vérifié (ansible-lint, comportement testé en conteneur), jamais exécuté : attend la machine A ([README](features/compute/fleet-manager/README.md), [ADR-015](docs/adr/ADR-015-storage-tiers-and-power.md)) |
 | Application inner-riddle | ✅ `v0.2.0` en production sur `https://inner-riddle.cybermimic.com` (sync manuelle, comptes locaux) — passage en `v0.3.0` + connexion Keycloak préparé, attend l'étiquette — [plan inner-riddle](docs/plans/inner-riddle.md) |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)
