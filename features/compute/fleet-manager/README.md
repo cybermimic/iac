@@ -54,7 +54,10 @@ erreur couperait l'accès à la machine.
   `fleet_managed` (exemple dans `bootstrap/ansible/inventory/hosts.yml.example`).
 - Collection `ansible.posix` (`bootstrap/ansible/requirements.yml`).
 - La clé privée correspondante, rangée dans Vault par l'opérateur
-  (`secret/fleet-manager/ssh`), lue par le service.
+  (`secret/fleet-manager/ssh`), lue par le service. Le chemin
+  `fleet-manager/*` est ajouté par cette feature au fichier de policy
+  versionné (`features/security/vault/policies/external-secrets.hcl`), à
+  appliquer selon [security/external-secrets](../../security/external-secrets/README.md#modifier-la-policy).
 
 ## Ressources approximatives
 
