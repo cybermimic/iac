@@ -23,6 +23,15 @@ d'acheter.
 4. Démarrage sans écran ni clavier, extinction ACPI propre.
 5. RAM déjà installée (reconditionné), vu le prix actuel de la mémoire.
 
+Points à contrôler à l'achat d'un M920q :
+
+- processeur **i5-8500T, i5-8600T ou i7-8700T** (vPro) ; les i3 et Pentium
+  n'ont pas AMT ;
+- pour la machine A, le **support 2,5" et sa nappe SATA** : souvent absents
+  des unités vendues sans disque, à demander ou à acheter à part ;
+- carte réseau Intel I219-LM (nécessaire à AMT) : à confirmer sur la fiche
+  PSREF de Lenovo.
+
 Les deux machines sont **du même modèle** : un seul rôle Ansible, un seul
 comportement BIOS/AMT, pièces interchangeables.
 
@@ -34,12 +43,12 @@ fact-check produit des données (premier connecteur en service, étape 6 du
 
 | Achat | Détail | Prix indicatif |
 |---|---|---|
-| Switch | 8 ports 2,5 GbE administrable, VLAN 802.1Q, sans ventilateur, SFP+ (ex. MikroTik CRS310-8G+2S+IN, Zyxel XMG1915-10E) | ~150-250 € |
-| Machine A (`cold`) | Mini-PC vPro reconditionné, i5, 16 Go, NVMe système + disque 2,5" de 2 To | ~280-350 € |
-| Prise connectée | Wi-Fi, API locale sans cloud (type Shelly Plug) ; sert aussi à mesurer la consommation | ~25 € |
-| *Optionnel* : disque `frozen` | Disque USB 4 To, branché à la main | ~110 € |
+| Switch | Zyxel **XMG1915-10E** : 8 × 2,5 GbE + 2 SFP+, administrable (smart), VLAN 802.1Q, sans ventilateur | ~170-230 € |
+| Machine A (`cold`) | Lenovo ThinkCentre **M920q** Tiny reconditionné, **i5-8500T** (vPro), 16 Go, NVMe système 256 Go + **SSD SATA 2,5" 2 To** (Samsung 870 EVO `MZ-77E2T0B/EU` ou Crucial MX500 `CT2000MX500SSD1`) | ~200-250 € + ~150-200 € |
+| Prise connectée | **Shelly Plug S Gen3** : Wi-Fi, fonctionne en local sans cloud, mesure de consommation | ~25 € |
+| *Optionnel* : disque `frozen` | Disque USB 4 To (WD Elements Portable `WDBU6Y0040BBK` ou Seagate Expansion Portable `STKM4000400`), branché à la main | ~110 € |
 
-Total : **~450-625 €** (~560-735 € avec le disque `frozen`).
+Total : **~550-700 €** (~660-810 € avec le disque `frozen`).
 
 Travaux (🤖 = agent, 👤 = opérateur) :
 
@@ -77,7 +86,7 @@ Travaux (🤖 = agent, 👤 = opérateur) :
 
 | Achat | Détail | Prix indicatif |
 |---|---|---|
-| Machine B | Même modèle que A, i5, **32 Go**, NVMe 512 Go-1 To | ~250-350 € |
+| Machine B | Lenovo ThinkCentre **M920q** Tiny, **i5-8500T** (vPro), **32 Go** (2 × 16 Go, le maximum du modèle), NVMe 512 Go-1 To | ~250-350 € |
 
 Travaux :
 
@@ -94,4 +103,4 @@ capacité) plutôt que de calcul à la demande.
 
 ## Budget total
 
-**~700-1 000 €** sur les deux temps, hors disque `frozen`.
+**~800-1 050 €** sur les deux temps, hors disque `frozen`.
