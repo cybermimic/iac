@@ -25,6 +25,7 @@ Répondre en **français**. Messages de commit et titres de PR en **anglais**
 | Ce qui tourne, IP, chemin d'une requête, où est configuré quoi | [docs/platform-overview.md](docs/platform-overview.md) |
 | Architecture cible | [docs/architecture.md](docs/architecture.md) |
 | Faits opérationnels (accès, state, dette) | [docs/operations.md](docs/operations.md) |
+| Inventaire des secrets, reconstruction | [docs/secrets.md](docs/secrets.md) |
 | Décisions | [docs/adr/](docs/adr/) |
 | Une feature précise | `features/<domaine>/<feature>/README.md` |
 
@@ -83,12 +84,17 @@ Mettre à jour cette ligne à chaque montée de version.
   l'aveugle, réconcilier par `terraform import` d'abord.
 - **Vault : policy partagée, jamais réécrite à l'aveugle** — un seul rôle
   Kubernetes auth (`external-secrets`) sert tout le cluster via une seule
-  policy (`external-secrets`, un chemin par feature). Avant tout
-  changement : `vault policy read external-secrets` d'abord, reporter
-  **tous** les chemins existants dans le nouveau contenu (`vault policy
-  write` remplace tout, n'ajoute rien). Un oubli a cassé 4 `ExternalSecret`
-  pendant 18h le 2026-10-19 (policy réécrite sous un autre nom en ne
-  reportant qu'un seul chemin connu).
+  policy (`external-secrets`, un chemin par feature), **versionnée** dans
+  `features/security/vault/policies/external-secrets.hcl`. Tout changement
+  passe par ce fichier, puis comparaison avec la policy réelle, puis
+  application depuis le fichier (`vault policy write` remplace tout,
+  n'ajoute rien) — procédure dans `features/security/external-secrets/README.md`.
+  Un oubli a cassé 4 `ExternalSecret` pendant 18h le 2026-10-19 (policy
+  réécrite à la main en ne reportant qu'un seul chemin connu).
+- **Registre des secrets** : tout nouveau secret (chemin Vault, Secret
+  Kubernetes, secret de dépôt GitHub) est ajouté à
+  [docs/secrets.md](docs/secrets.md) dans le même changement, avec sa
+  nature et la façon de le recréer.
 - **Dépendances de features explicites** : si une feature dépend d'une
   autre (ex. `security/vault` dépend de `storage/local-path`), le
   documenter dans son README et le représenter dans le graphe de modules
