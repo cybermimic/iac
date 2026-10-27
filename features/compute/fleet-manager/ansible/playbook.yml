@@ -1,5 +1,5 @@
 ---
-# Prépare une machine gérée par fleet-manager (ADR-013) : Wake-on-LAN
+# Prépare une machine gérée par fleet-manager (ADR-015) : Wake-on-LAN
 # actif à chaque démarrage, et l'exception d'extinction (section 6) — un
 # compte dédié dont la clé SSH ne peut lancer qu'une commande, `systemctl
 # poweroff`, autorisée sans mot de passe par une seule ligne sudoers.
@@ -106,7 +106,7 @@
         group: root
         mode: "0440"
         content: |
-          # Exception d'extinction (ADR-013, section 6) : cette seule commande.
+          # Exception d'extinction (ADR-015, section 6) : cette seule commande.
           {{ fleet_manager_user }} ALL=(root) NOPASSWD: {{ fleet_manager_poweroff }}
         validate: /usr/sbin/visudo -cf %s
 

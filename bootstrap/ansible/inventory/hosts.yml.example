@@ -22,7 +22,7 @@ all:
     k8s_control_plane:
       hosts:
         nucboxg3-plus:
-    # Machines allumées à la demande par fleet-manager (ADR-013), ex. :
+    # Machines allumées à la demande par fleet-manager (ADR-015), ex. :
     # fleet_managed:
     #   hosts:
     #     fleet-cold-01:

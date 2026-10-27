@@ -6,7 +6,7 @@ Côté plateforme de **fleet-manager** (dépôt privé
 [`cybermimic/fleet-manager`](https://github.com/cybermimic/fleet-manager)),
 le service qui allume à la demande les machines éteintes par défaut et
 déplace les données entre niveaux de stockage
-([ADR-013](../../../docs/adr/ADR-013-storage-tiers-and-power.md)).
+([ADR-015](../../../docs/adr/ADR-015-storage-tiers-and-power.md)).
 
 Ce dossier ne contient que ce qui touche les **hôtes** :
 
@@ -17,7 +17,7 @@ Ce dossier ne contient que ce qui touche les **hôtes** :
 Le déploiement du service lui-même (`Application` ArgoCD, secrets) viendra
 quand il aura une persistance et une API (ADR-001 de son dépôt).
 
-## L'exception d'extinction (ADR-013, section 6)
+## L'exception d'extinction (ADR-015, section 6)
 
 Aucune machine du parc n'a de sudo sans mot de passe, **sauf** cette
 exception, limitée à une commande et à un compte :
