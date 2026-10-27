@@ -1,4 +1,4 @@
-# Stockage objet S3 Garage (ADR-004, niveau `hot` de l'ADR-013), livré par
+# Stockage objet S3 Garage (ADR-004, niveau `hot` de l'ADR-015), livré par
 # ArgoCD (ADR-008). Interne au cluster uniquement : Service ClusterIP, aucun
 # accès depuis le LAN ni Internet.
 apiVersion: argoproj.io/v1alpha1

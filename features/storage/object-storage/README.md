@@ -4,7 +4,7 @@
 
 Stockage objet compatible S3 **dans le cluster** : Garage
 ([ADR-004](../../../docs/adr/ADR-004-storage-architecture.md)), niveau `hot`
-des niveaux de stockage ([ADR-013](../../../docs/adr/ADR-013-storage-tiers-and-power.md)).
+des niveaux de stockage ([ADR-015](../../../docs/adr/ADR-015-storage-tiers-and-power.md)).
 Premier consommateur : fact-check (fichiers bruts archivés, bucket
 `fact-check`).
 
@@ -27,7 +27,7 @@ Internet n'y accèdent.
 - **Un seul nœud**, `replication_factor = 1` : **aucune redondance**. Une
   perte du disque du NucBox perd les objets ; les sources publiques restent
   re-téléchargeables, sauf ce qui a disparu en amont (niveaux `cold` et
-  `frozen` de l'ADR-013, à venir).
+  `frozen` de l'ADR-015, à venir).
 - **Secret RPC fourni par Vault** : sans valeur, le chart en génère un via
   `lookup`, qu'ArgoCD n'exécute pas (différence permanente à chaque
   synchronisation).
