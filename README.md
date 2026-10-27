@@ -48,6 +48,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `networking/lan-dns` (CoreDNS) | 🗑️ Supprimé le 2026-10-12 ([ADR-007](docs/adr/ADR-007-lan-dns.md) abandonné, [incident](docs/incidents/2026-09-28-lan-dns-outage.md)) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
 | `delivery/argocd` | ✅ Déployé sur `https://192.168.1.244`, Application racine app-of-apps active ([ADR-008](docs/adr/ADR-008-gitops-layout.md)) |
+| Application fact-check | 📝 Planifiée — [dépôt privé](https://github.com/cybermimic/fact-check) créé, conception documentée dans le dépôt — [plan fact-check](docs/plans/fact-check.md) |
 | `security/external-secrets` | ✅ Déployé par ArgoCD, `ClusterSecretStore` `vault` valide (Vault en TLS sur `192.168.1.243`) |
 | `delivery/registry` (Zot) | ✅ Déployé sur `https://192.168.1.242`, approuvé par containerd ([ADR-010](docs/adr/ADR-010-container-registry.md)) |
 | `security/keycloak` (fournisseur d'identité) | ✅ Déployé par ArgoCD — realm `inner-riddle` public sur `https://auth.cybermimic.com`, console d'administration sur `https://192.168.1.245:8443` ([ADR-012](docs/adr/ADR-012-identity-keycloak.md)) |
