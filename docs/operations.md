@@ -62,6 +62,11 @@ le rechercher comme référence.
 
 ## Limitations connues / dette technique
 
+- **Coupures du lien Ethernet du NucBox** — 19 en octobre 2026, dont une de
+  ~3 jours ; chacune fait perdre l'IP du nœud et redémarre l'API Kubernetes
+  en boucle. Diagnostic et remédiations à décider :
+  [incident d'octobre 2026](incidents/2026-10-nucbox-link-drops.md).
+
 - **Pas de backend Terraform distant** (voir ci-dessus / ADR-005).
 - **Bootstrap Ansible jamais exécuté pour de vrai** contre le NucBox
   (écrit et validé syntaxiquement seulement — pas de sudo sans mot de
