@@ -16,6 +16,7 @@ module "vault" {
   # Propre IP LAN + TLS par Vault lui-même (ADR-009) : dépendances
   # explicites sur MetalLB (IP) et la CA interne (certificat).
   load_balancer_ip    = var.vault_load_balancer_ip
+  storage_backend     = var.vault_storage_backend
   cluster_issuer_name = module.cert_manager.cluster_issuer_name
   depends_on          = [module.metallb]
 }

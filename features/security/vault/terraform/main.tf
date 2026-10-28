@@ -27,6 +27,28 @@ locals {
   tls_secret_name = "vault-listener-tls"
   # Le chart monte extraVolumes de type secret sous /vault/userconfig/<nom>/.
   tls_dir = "/vault/userconfig/${local.tls_secret_name}"
+
+  # Stockage (ADR-014, P2). « raft » permet les instantanés à chaud ; il exige
+  # api_addr et cluster_addr même sur un seul nœud. Après la migration, les
+  # données « file » d'origine restent dans /vault/data/file (retour arrière),
+  # jamais mélangées au dossier raft.
+  storage_file   = <<-EOT
+    storage "file" {
+      path = "/vault/data"
+    }
+  EOT
+  storage_raft   = <<-EOT
+    storage "raft" {
+      path    = "/vault/data/raft"
+      node_id = "vault-0"
+    }
+    api_addr     = "https://${var.load_balancer_ip}:8200"
+    cluster_addr = "https://127.0.0.1:8201"
+    # Obligatoire avec raft depuis Vault 2.x (refus de démarrer sinon, vérifié
+    # sur 2.0.4) ; HashiCorp recommande de désactiver mlock avec raft.
+    disable_mlock = true
+  EOT
+  storage_config = var.storage_backend == "raft" ? local.storage_raft : local.storage_file
 }
 
 resource "kubernetes_namespace" "vault" {
@@ -108,9 +130,7 @@ resource "helm_release" "vault" {
               tls_key_file    = "${local.tls_dir}/tls.key"
             }
 
-            storage "file" {
-              path = "/vault/data"
-            }
+            ${trimspace(local.storage_config)}
           EOT
         }
 

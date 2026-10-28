@@ -20,6 +20,8 @@ acme_email = "operateur@example.com"
 # Services internes : une IP par service (ADR-009), jamais redirigée par la
 # Freebox.
 vault_load_balancer_ip  = "192.168.1.243"
+# "file" jusqu'à la migration (docs/runbooks/vault-raft-migration.md), puis "raft".
+vault_storage_backend = "file"
 argocd_load_balancer_ip = "192.168.1.244"
 
 # kubeconfig_path n'a volontairement pas d'exemple ici : fournis-le via
