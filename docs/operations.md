@@ -98,6 +98,13 @@ prendre, avec une ADR, dès que l'un de ces seuils est atteint :
 fact-check, qui archive les données publiques brutes, est l'application la
 plus susceptible de les atteindre (voir [plan fact-check](plans/fact-check.md)).
 
+## Reconstruire la plateforme
+
+[Runbook de reconstruction](runbooks/rebuild.md) — **brouillon jamais
+exécuté** : ordre des étapes (hôte, cluster, Terraform en deux temps, CA,
+Vault, secrets, ArgoCD, accès externes) et ce qui manque pour une
+restauration avec données.
+
 ## DNS
 
 Pas de DNS local : la Freebox est le DNS de tout le LAN (configuration
