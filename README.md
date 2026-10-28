@@ -46,6 +46,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `storage/backups` | ⏳ Sauvegarde chiffrée d'etcd et de l'état Terraform vers disque USB : playbook écrit et testé en conteneur, jamais exécuté — attend la clé publique `age` et le disque ([README](features/storage/backups/README.md)) |
 | `security/vault` | ✅ Déployé, initialisé, sur `https://192.168.1.243:8200` (TLS de bout en bout, CA interne) — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
+| `compute/fleet-manager` (hôtes gérés) | ⏳ Playbook écrit et vérifié (ansible-lint, comportement testé en conteneur), jamais exécuté : attend la machine A ([README](features/compute/fleet-manager/README.md), [ADR-015](docs/adr/ADR-015-storage-tiers-and-power.md)) |
 | `networking/ingress` (Traefik) | ✅ Ingress **public** sur `192.168.1.240` (classe non par défaut, namespaces autorisés : `inner-riddle`, `keycloak`) + Let's Encrypt (production), ports 80/443 redirigés ([ADR-009](docs/adr/ADR-009-public-exposure.md)) |
 | `networking/lan-dns` (CoreDNS) | 🗑️ Supprimé le 2026-10-12 ([ADR-007](docs/adr/ADR-007-lan-dns.md) abandonné, [incident](docs/incidents/2026-09-28-lan-dns-outage.md)) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |

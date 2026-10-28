@@ -17,3 +17,16 @@ all:
         nucboxg3-plus:
           ansible_host: 192.168.1.253
           ansible_user: hoarauv
+    # Plan de contrôle : jamais géré par fleet-manager (le playbook de
+    # features/compute/fleet-manager refuse toute machine de ce groupe).
+    k8s_control_plane:
+      hosts:
+        nucboxg3-plus:
+    # Machines allumées à la demande par fleet-manager (ADR-015), ex. :
+    # fleet_managed:
+    #   hosts:
+    #     fleet-cold-01:
+    #       ansible_host: 192.168.1.251
+    #       ansible_user: <compte d'administration>
+    #       fleet_manager_wol_interface: <interface câblée>
+    #       fleet_manager_ssh_public_key: "ssh-ed25519 AAAA… fleet-manager"

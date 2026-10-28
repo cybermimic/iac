@@ -11,6 +11,7 @@
 # Une policy n'est pas un secret : elle peut vivre dans ce repo public.
 
 path "secret/data/inner-riddle/*"    { capabilities = ["read"] }
+path "secret/data/fleet-manager/*"   { capabilities = ["read"] }
 path "secret/data/registry/*"        { capabilities = ["read"] }
 path "secret/data/actions-runners/*" { capabilities = ["read"] }
 path "secret/data/argocd/*"          { capabilities = ["read"] }
