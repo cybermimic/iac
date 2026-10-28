@@ -1,6 +1,6 @@
 # Incident octobre 2026 — Coupures du lien Ethernet du NucBox, API Kubernetes en boucle
 
-**Statut : diagnostiqué, remédiation à décider** (rapport du 2026-10-27,
+**Statut : diagnostiqué, remédiations R1 et R3 retenues** (rapport du 2026-10-27,
 établi en lecture seule : journaux du noyau, du kubelet et de NetworkManager).
 
 ## Résumé
@@ -90,4 +90,6 @@ que l'outil d'observabilité est choisi, R2 et R4 seulement si nécessaire.
 |---|---|
 | Diagnostic (journaux noyau, kubelet, NetworkManager) | Fait (2026-10-27) |
 | Réponses de l'opérateur aux questions ci-dessus | À faire |
-| Choix des remédiations | À faire |
+| Choix des remédiations (2026-10-28) : **R1 et R3 retenues**, R5 avec l'outil d'observabilité, R2 et R4 seulement si les coupures persistent | Fait |
+| R1 : playbook `features/networking/node-link` (`ignore-carrier`) | Écrit, à exécuter par l'opérateur |
+| R3 : autre câble, autre port de la Freebox | À faire (opérateur) |
