@@ -1,8 +1,9 @@
 # ADR-016 — Sauvegardes
 
-**Statut : Proposée** (2026-10-28). Les choix marqués « recommandé » sont
-des propositions de l'agent ; l'opérateur tranche chaque question (Q1 à Q5)
-avant toute mise en œuvre.
+**Statut : Acceptée** (2026-10-28) : toutes les recommandations sont
+retenues par l'opérateur — Q1 A, Q2 A (`age`), Q3 Garage + disque USB puis
+machine `cold` + hors site par disque échangé, Q4 telle que proposée, Q5
+contrôle de forme quotidien et restauration trimestrielle.
 
 ## Contexte
 
@@ -69,8 +70,8 @@ Deux faits pèsent sur la conception :
 | 2 | **Hors du NucBox** : en attendant la machine `cold`, un **disque USB** branché au NucBox, copie quotidienne automatique ; puis la machine `cold` (ADR-015) | Perte du disque du NucBox | USB : tout de suite ; `cold` : temps 1 du plan d'achat |
 | 3 | **Hors site** : disque `frozen` déposé ailleurs et échangé chaque mois (👤), **ou** stockage objet d'un hébergeur (fichiers déjà chiffrés, quelques centimes par mois à ce volume) | Sinistre (vol, incendie, surtension) | À choisir |
 
-Recommandé : copies 1 et 2 dès que possible ; pour la 3, le disque échangé
-(aucun tiers) sauf si l'opérateur préfère un hébergeur.
+Retenu : copies 1 et 2 dès que possible ; pour la 3, le disque échangé
+(aucun tiers).
 
 ## Q4 — Rétention et outil de copie
 
