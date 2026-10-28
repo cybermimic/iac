@@ -42,3 +42,9 @@ variable "acme_email" {
   description = "Adresse e-mail du compte Let's Encrypt (avis d'expiration). Donnée non secrète."
   type        = string
 }
+
+variable "vault_storage_backend" {
+  description = "Stockage de Vault : \"file\" ou \"raft\" (ADR-014 P2). Ne passer à \"raft\" qu'en suivant docs/runbooks/vault-raft-migration.md."
+  type        = string
+  default     = "file"
+}

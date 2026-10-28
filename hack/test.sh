@@ -53,4 +53,14 @@ fi
 # PowerShell : ASCII pur (Windows PowerShell 5.1 lit les scripts en Windows-1252)
 run_check "powershell ascii" ./hack/check-powershell-ascii.sh
 
+# Documentation : liens relatifs, numéros d'ADR uniques, sections des README de feature
+run_check "docs" ./hack/check-docs.py
+
+# Applications ArgoCD rendues et validées (helm, kubeconform et git requis)
+if command -v helm >/dev/null 2>&1 && command -v kubeconform >/dev/null 2>&1; then
+  run_check "argocd applications" ./hack/check-apps.py
+else
+  echo "SKIP  argocd applications: helm ou kubeconform non installé (versions : .github/workflows/validate.yml)"
+fi
+
 exit "$status"
