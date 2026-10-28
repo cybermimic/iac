@@ -52,7 +52,7 @@ versionnée : [`features/security/vault/policies/external-secrets.hcl`](../featu
 |---|---|---|---|
 | `object-storage/garage` | `rpc_secret` | Générée | iac #25 |
 | `fact-check/s3` | `access_key_id`, `secret_access_key` | Générée, **liée aux données** (clé importée dans Garage) | iac #25 |
-| `fact-check/postgres` | `password` (hexadécimal) | Générée, **liée aux données** | iac #26 |
+| `fact-check/postgres` | `password` (hexadécimal) | Générée **automatiquement** (pilote ADR-014 P1 : générateur + `PushSecret` `IfNotExists`, `gitops/fact-check/postgres-password.yaml`), **liée aux données** | iac #26 |
 | `argocd/repo-fact-check` | `ssh_private_key` | Tiers (clé de déploiement) | iac #26 |
 | `fleet-manager/ssh` | `ssh_private_key` | Générée ; partie publique déployée par Ansible sur les machines gérées | iac #28 |
 | `mail/smtp` | `host`, `port`, `starttls`, `ssl`, `username`, `password`, `from`, `from_name` | **Tiers** (compte SMTP du fournisseur, OVH d'abord) | iac #21 (ADR-013, envoi d'e-mails) |
