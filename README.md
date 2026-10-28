@@ -41,6 +41,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | Feature | Statut |
 |---|---|
 | `networking/metallb` | ✅ Déployé — IP joignables depuis le LAN depuis le 2026-09-27 (annonce L2 corrigée) |
+| `networking/node-link` | ⏳ Garde l'IP du nœud pendant une coupure du lien (R1 de l'incident d'octobre 2026) : playbook écrit, jamais exécuté ([README](features/networking/node-link/README.md)) |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
 | `security/vault` | ✅ Déployé, initialisé, sur `https://192.168.1.243:8200` (TLS de bout en bout, CA interne) — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |

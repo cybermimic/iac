@@ -1,0 +1,52 @@
+---
+# Garde l'adresse IP d'un nœud pendant une coupure du lien Ethernet
+# (incident d'octobre 2026, remédiation R1) : NetworkManager, réglage par
+# interface `ignore-carrier`. Sans lui, chaque coupure retire l'IP du nœud et
+# l'API Kubernetes, sondée sur cette IP, redémarre en boucle.
+#
+# Configuration d'hôte, donc Ansible et pas Terraform (ADR-001). Relançable.
+# Ne redémarre PAS NetworkManager (un redémarrage peut lui-même couper le
+# réseau) : recharge seulement sa configuration (README, Installation).
+#
+#   ansible-playbook -i <inventaire> features/networking/node-link/ansible/playbook.yml -K
+#
+# Variable par machine (inventaire local, jamais commité) :
+#   node_link_interface   interface qui porte l'IP du nœud, ex. enp3s0
+- name: Keep the node IP address when the Ethernet link drops
+  hosts: k8s_nodes
+  become: true
+  tasks:
+    - name: Check the interface exists on this host
+      ansible.builtin.assert:
+        that:
+          - node_link_interface is defined
+          - node_link_interface in ansible_facts.interfaces
+        fail_msg: "node_link_interface absente ou inconnue ici (interfaces : {{ ansible_facts.interfaces | join(', ') }})."
+
+    - name: Ignore carrier loss on the node interface
+      ansible.builtin.copy:
+        dest: /etc/NetworkManager/conf.d/90-homelab-node-link.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Géré par Ansible (features/networking/node-link). Garde la connexion
+          # active, donc l'IP, quand le lien tombe (incident d'octobre 2026, R1).
+          [device-homelab-node-link]
+          match-device=interface-name:{{ node_link_interface }}
+          ignore-carrier=yes
+      notify: Reload NetworkManager configuration
+
+    - name: Check NetworkManager parses the setting
+      ansible.builtin.command:
+        cmd: NetworkManager --print-config
+      register: node_link_config
+      changed_when: false
+      failed_when: "'ignore-carrier=yes' not in node_link_config.stdout"
+
+  handlers:
+    # `conf` seulement : pas de redémarrage du DNS ni du service.
+    - name: Reload NetworkManager configuration
+      ansible.builtin.command:
+        cmd: nmcli general reload conf
+      changed_when: true
