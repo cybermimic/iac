@@ -57,6 +57,7 @@ single-node.
 | `networking/metallb` | ✅ Déployé |
 | `networking/node-link` | ⏳ Garde l'IP du nœud pendant une coupure du lien (R1 de l'incident d'octobre 2026) : playbook écrit, jamais exécuté ([README](../features/networking/node-link/README.md)) |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
+| `storage/backups` | ⏳ Sauvegarde chiffrée d'etcd et de l'état Terraform vers disque USB : playbook écrit et testé en conteneur, jamais exécuté — attend la clé publique `age` et le disque ([README](../features/storage/backups/README.md)) |
 | `security/vault` | ✅ Déployé, initialisé, `https://192.168.1.243:8200` (TLS de bout en bout) — unseal manuel (humain) après chaque redémarrage |
 | `networking/ingress` (Traefik) | ✅ Ingress public + Let's Encrypt, ports pas encore redirigés ([ADR-009](adr/ADR-009-public-exposure.md)) |
 | `networking/lan-dns` | 🗑️ Supprimé le 2026-10-12 ([ADR-007](adr/ADR-007-lan-dns.md) abandonné) |
