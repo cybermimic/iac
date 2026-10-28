@@ -18,7 +18,7 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 | `gitops/apps/repositories/arc-oci.yaml` | Déclare à ArgoCD le dépôt OCI public des charts ARC (`ghcr.io`), sans identifiant |
 | `gitops/apps/arc-controller.yaml` | Contrôleur ARC (`arc-systems`), chart `gha-runner-scale-set-controller` 0.15.0 |
 | `gitops/apps/arc-runners-inner-riddle.yaml` | Scale set `homelab` de `cybermimic/inner-riddle` (`arc-runners`), chart `gha-runner-scale-set` 0.15.0 ; livre aussi les ressources partagées du namespace (ligne suivante) |
-| `gitops/apps/arc-runners-fact-check.yaml` | Scale set `homelab` de `cybermimic/fact-check`, même chart ; `minRunners: 0` |
+| `gitops/apps/arc-runners-fact-check.yaml` | Scale set `homelab` de `cybermimic/fact-check`, même chart ; `minRunners: 0`, `maxRunners: 1` |
 | `gitops/inner-riddle/` (ici) | Ressources **partagées par tout le namespace** `arc-runners`, malgré le nom du dossier : `ExternalSecret` de la GitHub App, `ConfigMap` de la CA interne, `NetworkPolicy` (`podSelector: {}`) |
 
 ## Fonctionnement
@@ -48,8 +48,13 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
   (`github_app_id`, `github_app_installation_id`, `github_app_private_key`),
   rangé par l'opérateur (commandes D du [plan](../../../docs/plans/inner-riddle.md)).
 - `delivery/registry` : cible des publications.
-- Une **GitHub App** de l'organisation, installée sur les seuls dépôts
-  autorisés (création : étape 6 du plan).
+- Une **GitHub App** de l'organisation (`cybermimic-homelab-runners`),
+  installée sur les seuls dépôts autorisés (création : étape 6 du plan).
+  Accès limité le 2026-10-28 à `inner-riddle`, `fact-check` et
+  `fleet-manager` (*Only select repositories*) : elle était installée sur
+  tous les dépôts, `iac` public compris. Vérifier :
+  `gh api orgs/cybermimic/installations --jq '.installations[].repository_selection'`
+  → `selected`.
 
 ## Ressources approximatives
 
