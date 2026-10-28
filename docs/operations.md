@@ -62,6 +62,11 @@ le rechercher comme référence.
 
 ## Limitations connues / dette technique
 
+- **Coupures du lien Ethernet du NucBox** — 19 en octobre 2026, dont une de
+  ~3 jours ; chacune fait perdre l'IP du nœud et redémarre l'API Kubernetes
+  en boucle. Diagnostic et remédiations à décider :
+  [incident d'octobre 2026](incidents/2026-10-nucbox-link-drops.md).
+
 - **Pas de backend Terraform distant** (voir ci-dessus / ADR-005).
 - **Bootstrap Ansible jamais exécuté pour de vrai** contre le NucBox
   (écrit et validé syntaxiquement seulement — pas de sudo sans mot de
@@ -76,6 +81,29 @@ le rechercher comme référence.
   humaine, jamais automatisée (voir `features/security/vault/README.md`,
   section 3). Après un reboot, les services qui dépendent de Vault ne
   fonctionnent pas tant que cet unseal n'est pas fait.
+
+## Capacité du nœud et seuils d'extension
+
+Mesure du 2026-10-27 sur le NucBox (`df -h /`, `free -h`) : 4 CPU, ~6 Gi
+de RAM disponibles sur 14 Gi visibles, **76 Go de disque libres** sur
+160 Go (partition racine partagée par le système, containerd et
+local-path).
+
+Ajouter un nœud (ou un disque dédié au stockage) devient une décision à
+prendre, avec une ADR, dès que l'un de ces seuils est atteint :
+
+- disque racine **> 75 %** utilisé ;
+- RAM disponible **< 2 Gi** en régime normal.
+
+fact-check, qui archive les données publiques brutes, est l'application la
+plus susceptible de les atteindre (voir [plan fact-check](plans/fact-check.md)).
+
+## Reconstruire la plateforme
+
+[Runbook de reconstruction](runbooks/rebuild.md) — **brouillon jamais
+exécuté** : ordre des étapes (hôte, cluster, Terraform en deux temps, CA,
+Vault, secrets, ArgoCD, accès externes) et ce qui manque pour une
+restauration avec données.
 
 ## DNS
 
@@ -106,6 +134,17 @@ Freebox), à retirer pour revenir à l'état d'origine (`sudo`) :
   aujourd'hui, `kubectl -n kube-system get ds calico-node -o
   jsonpath='{..image}'`) avec vérification du checksum : voir la section
   « Prérequis » du runbook.
+
+## Bilan de santé
+
+`./hack/status.py` (lecture seule, aucun secret affiché) : nœud, lien réseau
+et coupures des dernières 24 h, disque et RAM (seuils ci-dessus), Vault
+scellé ou non, `Application` ArgoCD, `ClusterSecretStore` et
+`ExternalSecret`, certificats (alerte à 21 jours), CronJob (dernier succès,
+dernière exécution en échec), redémarrages de pods des dernières 24 h.
+`OK` / `WARN` / `FAIL`, code de retour 1 au moindre `FAIL`. À lancer après
+chaque redémarrage du NucBox et à la fin d'une reconstruction ; les
+contrôles de l'hôte ne tournent que sur le nœud lui-même.
 
 ## Checklist avant de reprendre le travail sur une nouvelle machine
 

@@ -53,19 +53,8 @@ vault write auth/kubernetes/config kubernetes_host=https://kubernetes.default.sv
 
 # Une seule policy ("external-secrets"), un chemin par feature/application
 # consommatrice — un seul rôle Kubernetes auth sert tout le cluster.
-# ⚠️ Avant de la réécrire, toujours lire l'existant
-# (`vault policy read external-secrets`) et reporter TOUS ses chemins :
-# un `vault policy write` remplace le contenu entier, il n'ajoute rien.
-# Un oubli ici a cassé 4 ExternalSecret pendant 18h le 2026-10-19
-# (registry, actions-runners, argocd — policy réécrite sous un autre nom
-# en ne reportant que inner-riddle, sans relire l'originale d'abord).
-vault policy write external-secrets - <<'HCL'
-path "secret/data/inner-riddle/*"    { capabilities = ["read"] }
-path "secret/data/registry/*"        { capabilities = ["read"] }
-path "secret/data/actions-runners/*" { capabilities = ["read"] }
-path "secret/data/argocd/*"          { capabilities = ["read"] }
-path "secret/data/keycloak/*"        { capabilities = ["read"] }
-HCL
+# Son contenu est versionné : features/security/vault/policies/external-secrets.hcl
+# (voir « Modifier la policy » ci-dessous). Jamais de réécriture à la main.
 
 vault write auth/kubernetes/role/external-secrets \
   bound_service_account_names=external-secrets \
@@ -79,6 +68,29 @@ générique) ; à affiner en un rôle par application (policies distinctes,
 donc isolation entre applications) seulement si une fuite entre
 applications devient un vrai problème — pas avant (voir `CLAUDE.md`,
 "Ne pas inventer").
+
+## Modifier la policy
+
+La référence est le fichier
+[`features/security/vault/policies/external-secrets.hcl`](../vault/policies/external-secrets.hcl) :
+un `vault policy write` **remplace** tout le contenu, il n'ajoute rien (un
+oubli de chemin a cassé 4 `ExternalSecret` pendant 18 h le 2026-10-19).
+
+1. Ajouter le chemin dans le fichier (PR).
+2. Comparer avec la policy réelle (sur le NucBox, depuis la racine du repo) ;
+   la seule différence attendue est le chemin ajouté :
+
+   ```bash
+   diff <(kubectl -n vault exec vault-0 -- vault policy read external-secrets) \
+        <(grep -v '^#' features/security/vault/policies/external-secrets.hcl | sed '/^$/d')
+   ```
+
+3. Appliquer depuis le fichier, après fusion :
+
+   ```bash
+   kubectl -n vault exec -i vault-0 -- vault policy write external-secrets - \
+     < features/security/vault/policies/external-secrets.hcl
+   ```
 
 ## Inputs / Outputs
 

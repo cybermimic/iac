@@ -17,8 +17,9 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 |---|---|
 | `gitops/apps/repositories/arc-oci.yaml` | Déclare à ArgoCD le dépôt OCI public des charts ARC (`ghcr.io`), sans identifiant |
 | `gitops/apps/arc-controller.yaml` | Contrôleur ARC (`arc-systems`), chart `gha-runner-scale-set-controller` 0.15.0 |
-| `gitops/apps/arc-runners-inner-riddle.yaml` | Scale set `homelab` de `cybermimic/inner-riddle` (`arc-runners`), chart `gha-runner-scale-set` 0.15.0 |
-| `gitops/inner-riddle/` (ici) | `ExternalSecret` de la GitHub App, `ConfigMap` de la CA interne, `NetworkPolicy` |
+| `gitops/apps/arc-runners-inner-riddle.yaml` | Scale set `homelab` de `cybermimic/inner-riddle` (`arc-runners`), chart `gha-runner-scale-set` 0.15.0 ; livre aussi les ressources partagées du namespace (ligne suivante) |
+| `gitops/apps/arc-runners-fact-check.yaml` | Scale set `fact-check` de `cybermimic/fact-check`, même chart ; `minRunners: 0`, `maxRunners: 1` |
+| `gitops/inner-riddle/` (ici) | Ressources **partagées par tout le namespace** `arc-runners`, malgré le nom du dossier : `ExternalSecret` de la GitHub App, `ConfigMap` de la CA interne, `NetworkPolicy` (`podSelector: {}`) |
 
 ## Fonctionnement
 
@@ -47,28 +48,41 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
   (`github_app_id`, `github_app_installation_id`, `github_app_private_key`),
   rangé par l'opérateur (commandes D du [plan](../../../docs/plans/inner-riddle.md)).
 - `delivery/registry` : cible des publications.
-- Une **GitHub App** de l'organisation, installée sur les seuls dépôts
-  autorisés (création : étape 6 du plan).
+- Une **GitHub App** de l'organisation (`cybermimic-homelab-runners`),
+  installée sur les seuls dépôts autorisés (création : étape 6 du plan).
+  Accès limité le 2026-10-28 à `inner-riddle`, `fact-check` et
+  `fleet-manager` (*Only select repositories*) : elle était installée sur
+  tous les dépôts, `iac` public compris. Vérifier :
+  `gh api orgs/cybermimic/installations --jq '.installations[].repository_selection'`
+  → `selected`.
 
 ## Ressources approximatives
 
-Contrôleur + listener : ~50-100 Mi. Runner prêt au repos (runner +
-dockerd) : ~200-300 Mi. Pendant un job : ~1-3 Gi par runner selon le build,
+Contrôleur + un listener par scale set : ~50-100 Mi chacun. Runner prêt au
+repos (runner + dockerd) : ~200-300 Mi pour inner-riddle ; aucun pour
+fact-check (`minRunners: 0`). Pendant un job : ~1-3 Gi par runner selon le build,
 deux runners au plus. Stockage : `emptyDir` (effacé à la fin du job).
 
 ## Ajouter un dépôt (privé) autorisé
 
-1. Installer la GitHub App sur ce dépôt.
-2. Copier `gitops/apps/arc-runners-inner-riddle.yaml` (nouveau
-   `releaseName`, `githubConfigUrl`, `runnerScaleSetName`) et le dossier
-   `gitops/inner-riddle/` ici.
-3. Dans le dépôt : variables `CI_RUNNER` / `RELEASE_RUNNER` (selon ses
-   workflows) = le `runnerScaleSetName`.
+1. Installer la GitHub App sur ce dépôt (GitHub → organisation → Settings →
+   GitHub Apps → l'App des runners → Configure → *Repository access*).
+2. Copier `gitops/apps/arc-runners-fact-check.yaml` (nouveaux `name`,
+   `releaseName`, `githubConfigUrl` **et `runnerScaleSetName`**). Le
+   `runnerScaleSetName` nomme l'`AutoscalingRunnerSet` et ses
+   `Role`/`ServiceAccount` : il doit être **unique dans le namespace**. Le
+   2026-10-28, un second scale set nommé `homelab` a pris le contrôle de
+   celui d'inner-riddle et l'a pointé vers un autre dépôt. **Ne pas** copier le dossier
+   `gitops/inner-riddle/` : ses ressources sont communes au namespace, deux
+   Applications ArgoCD se disputeraient les mêmes objets.
+3. Dans le dépôt : `runs-on` = le `runnerScaleSetName` (variable
+   `CI_RUNNER` / `RELEASE_RUNNER` selon ses workflows).
+4. Mettre à jour les ressources approximatives ci-dessus.
 
 ## Vérification
 
 ```bash
-kubectl -n argocd get application arc-controller arc-runners-inner-riddle   # Synced, Healthy
+kubectl -n argocd get application arc-controller arc-runners-inner-riddle arc-runners-fact-check   # Synced, Healthy
 kubectl -n arc-runners get externalsecret arc-github-app                    # SecretSynced
 kubectl -n arc-systems get pods                                             # contrôleur + listener Running
 ```
@@ -94,8 +108,11 @@ Revenir aux révisions précédentes des Applications (git revert).
   incorrects, ou App non installée sur le dépôt.
 - `docker: unknown command: docker compose` → le volume
   `docker-cli-plugins` n'est pas monté dans le runner (modèle de pod).
-- Job bloqué « Waiting for a runner » → `runs-on` ne correspond pas à
-  `homelab` (variables `CI_RUNNER` / `RELEASE_RUNNER` du dépôt).
+- Job bloqué « Waiting for a runner » → `runs-on` ne correspond pas au
+  `runnerScaleSetName` du dépôt (variables `CI_RUNNER` / `RELEASE_RUNNER`).
+- Une Application `arc-runners-*` reste OutOfSync et l'`AutoscalingRunnerSet`
+  pointe vers un autre dépôt (`spec.githubConfigUrl`) → deux scale sets
+  portent le même `runnerScaleSetName`.
 - `x509: certificate signed by unknown authority` au `docker push` → la
   `ConfigMap` `homelab-ca` n'est pas montée, ou l'adresse du registre
   diffère de `192.168.1.242`.
