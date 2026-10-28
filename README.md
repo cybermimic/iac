@@ -57,7 +57,7 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | `security/keycloak` (fournisseur d'identité) | ✅ Déployé par ArgoCD — realm `inner-riddle` public sur `https://auth.cybermimic.com`, console d'administration sur `https://192.168.1.245:8443` ([ADR-012](docs/adr/ADR-012-identity-keycloak.md)) |
 | `observability/*`, `storage/object-storage`, `ai/*` | ❌ Pas commencé |
 | `delivery/actions-runners` (ARC) | ✅ Livré par ArgoCD, scale set `homelab` actif pour inner-riddle (1 runner prêt, 2 au plus) ([ADR-011](docs/adr/ADR-011-ci-runners.md)) |
-| Application inner-riddle | ✅ `v0.2.0` en production sur `https://inner-riddle.cybermimic.com` (sync manuelle, comptes locaux) — passage en `v0.3.0` + connexion Keycloak préparé, attend l'étiquette — [plan inner-riddle](docs/plans/inner-riddle.md) |
+| Application inner-riddle | ✅ `v0.3.0` en production sur `https://inner-riddle.cybermimic.com` (sync manuelle, connexion Keycloak) — passage en `v0.4.0` préparé, attend l'étiquette — [plan inner-riddle](docs/plans/inner-riddle.md) |
 
 Voir `docs/architecture.md` pour la vision cible, les ADRs (`docs/adr/`)
 pour le détail des décisions déjà prises, et

@@ -1,7 +1,7 @@
 # Plan — accueillir inner-riddle sur la plateforme
 
-**Statut : en cours** (mis à jour le 2026-10-20 : `v0.2.0` en
-production, runners actifs ; étape 9, connexion par Keycloak, préparée). Chaque étape suit la règle
+**Statut : en cours** (mis à jour le 2026-10-26 : `v0.3.0` en
+production avec la connexion Keycloak ; étape 10, `v0.4.0`, préparée). Chaque étape suit la règle
 du repo : code → `plan` relu → `apply` (ou synchronisation ArgoCD) avec
 l'accord de l'opérateur.
 
@@ -330,7 +330,7 @@ Suivie par le ticket IR-043 d'inner-riddle :
    répond (NAT en épingle de la Freebox) ; sinon entrée `hosts` vers
    `192.168.1.240`.
 
-### 9. Connexion par Keycloak (v0.3.0, mode `oidc`) — préparé, attend l'étiquette `v0.3.0`
+### 9. Connexion par Keycloak (v0.3.0, mode `oidc`) — ✅ en production
 
 `gitops/apps/inner-riddle.yaml` : `targetRevision: v0.3.0`, `auth.mode:
 oidc`, `auth.mapsOwner: victor`, `oidc.issuer:
@@ -357,6 +357,25 @@ Ordre des actions de l'opérateur :
    les cartes existantes ;
 6. 👤 le thérapeute se connecte une fois, ensuite seulement `victor` lui
    partage la carte.
+
+### 10. Version `v0.4.0` — préparé, attend l'étiquette `v0.4.0`
+
+Interface seulement : relier deux cartes en glissant, barre d'outils sous
+la carte sélectionnée, trait des relations selon le palier de certitude.
+Aucune migration de schéma, aucune valeur du chart à changer : seul
+`targetRevision` passe à `v0.4.0`.
+
+1. 👤 étiquette `v0.4.0` publiée par le workflow `Release` (images
+   `192.168.1.242/inner-riddle/{backend,frontend}:0.4.0`) ;
+2. 👤 sauvegarde juste avant la synchro :
+   `kubectl -n inner-riddle create job --from=cronjob/inner-riddle-backup backup-v0-4-0` ;
+3. 👤 fusion, puis synchronisation manuelle de l'Application inner-riddle
+   (diff relu : seules les étiquettes d'image et de version changent) ;
+4. 👤 contrôle : `https://inner-riddle.cybermimic.com` répond, la poignée
+   « Relier » apparaît sur un concept sélectionné.
+
+Retour arrière : remettre `targetRevision: v0.3.0` (aucune migration à
+défaire).
 
 ## Mises à jour de documentation attendues
 
