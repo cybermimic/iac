@@ -38,6 +38,13 @@ public — l'Ingress de ce dossier ne liste que des chemins explicites,
 jamais de wildcard. Ajouter un nouveau realm public = ajouter son chemin
 ici, en revue.
 
+Dans le cluster, le port HTTP de Keycloak (8080) n'accepte que Traefik
+et le Job `keycloak-config-cli` (`networkPolicy` du CR, dans
+`gitops/keycloak.yaml`). Keycloak fait confiance aux en-têtes
+`X-Forwarded-*` venant des pods : sans ce filtre, n'importe quel pod
+pourrait les usurper. Un nouveau client interne de ce port doit être
+ajouté à cette liste.
+
 Conséquence : le realm `master` a sa propre `frontendUrl` (`gitops/config-cli/realm-master.yaml`)
 pointée sur l'adresse admin, sinon Keycloak construit ses URLs OIDC avec
 le `hostname` public — qui n'expose pas `master` — et la console
@@ -119,6 +126,14 @@ serveur seul — elles vivent dans PostgreSQL.
 
 ## Troubleshooting
 
+- `https://auth.cybermimic.com` en `504 Gateway Timeout`, ou
+  `keycloak-config-cli` qui attend Keycloak sans fin
+  (`KEYCLOAK_AVAILABILITYCHECK`) → l'appelant n'est pas dans
+  `networkPolicy.http` du CR. Vérifier la NetworkPolicy générée par
+  l'opérateur (`kubectl -n keycloak get networkpolicy
+  keycloak-network-policy -o yaml`) et les labels réels de l'appelant
+  (`kubectl -n traefik get pods --show-labels`), qui peuvent changer avec
+  une montée de version du chart Traefik.
 - Console de compte (`https://auth.cybermimic.com/realms/<realm>/account`)
   en erreur « server responded with an invalid status », `POST
   …/openid-connect/token` → `403 {"error":"Invalid origin"}`, et journaux
