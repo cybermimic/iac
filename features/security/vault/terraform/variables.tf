@@ -68,3 +68,14 @@ variable "cluster_issuer_name" {
   description = "ClusterIssuer cert-manager qui signe le certificat du listener (output de security/cert-manager)"
   type        = string
 }
+
+variable "storage_backend" {
+  description = "Stockage de Vault : \"file\" (historique) ou \"raft\" (instantanés, ADR-014 P2). Ne passer à \"raft\" qu'en suivant docs/runbooks/vault-raft-migration.md : changer cette valeur seule démarre un Vault vide."
+  type        = string
+  default     = "file"
+
+  validation {
+    condition     = contains(["file", "raft"], var.storage_backend)
+    error_message = "storage_backend vaut \"file\" ou \"raft\"."
+  }
+}
