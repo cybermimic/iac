@@ -1,0 +1,63 @@
+#!/bin/sh
+# {{ ansible_managed }}
+#
+# Sauvegarde quotidienne de l'hôte (ADR-016) : instantané etcd et état Terraform,
+# chiffrés avec age pour la clé PUBLIQUE de l'opérateur — ce script peut écrire
+# des sauvegardes, jamais les relire — puis copiés sur un disque qui n'est pas
+# celui du NucBox.
+set -eu
+
+DEST="{{ backup_destination }}"
+RECIPIENTS=/etc/homelab-backup/recipients.txt
+STATE_DIR="{{ backup_terraform_state_dir }}"
+PKI=/etc/kubernetes/pki/etcd
+
+# Exigence 1 de l'ADR-016 : jamais sur le disque protégé. Disque absent = échec,
+# au lieu d'écrire en silence dans le dossier vide du point de montage.
+if ! mountpoint -q "$DEST"; then
+  echo "ÉCHEC : $DEST n'est pas un point de montage (disque de sauvegarde absent ?)" >&2
+  exit 1
+fi
+
+day=$(date +%F)
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+# put <fichier en clair> <destination chiffrée> : écrit d'abord un .partial, puis
+# renomme : une coupure en cours de copie ne laisse jamais un fichier tronqué
+# sous un nom valide.
+put() {
+  mkdir -p "$(dirname "$2")"
+  age -R "$RECIPIENTS" -o "$2.partial" "$1"
+  mv "$2.partial" "$2"
+}
+
+ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \
+  --cacert="$PKI/ca.crt" --cert="$PKI/healthcheck-client.crt" --key="$PKI/healthcheck-client.key" \
+  snapshot save "$work/etcd.db" >/dev/null
+put "$work/etcd.db" "$DEST/etcd/$day.db.age"
+
+# Sans .terraform (fournisseurs téléchargés, reconstitués par `terraform init`).
+tar -C "$(dirname "$STATE_DIR")" --exclude=.terraform -czf "$work/state.tar.gz" "$(basename "$STATE_DIR")"
+put "$work/state.tar.gz" "$DEST/terraform-state/$day.tar.gz.age"
+
+# Rétention (ADR-016, Q4) : 7 quotidiennes, les dimanches des 4 dernières
+# semaines, les premiers du mois des 6 derniers mois. Une sauvegarde manquée un
+# dimanche ou un premier du mois n'est pas remplacée.
+prune() {
+  for file in "$1"/*.age; do
+    [ -e "$file" ] || continue
+    date_of=$(basename "$file" | cut -c1-10)
+    days=$(( ($(date -d "$day" +%s) - $(date -d "$date_of" +%s)) / 86400 ))
+    keep=no
+    if [ "$days" -lt 7 ]; then keep=yes; fi
+    if [ "$days" -lt 28 ] && [ "$(date -d "$date_of" +%u)" = 7 ]; then keep=yes; fi
+    if [ "$days" -lt 183 ] && [ "$(date -d "$date_of" +%d)" = 01 ]; then keep=yes; fi
+    if [ "$keep" = no ]; then rm -f "$file"; fi
+  done
+}
+prune "$DEST/etcd"
+prune "$DEST/terraform-state"
+
+date -u +%FT%TZ > "$DEST/last-success"
+echo "Sauvegarde du $day terminée"

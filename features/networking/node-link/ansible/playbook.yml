@@ -1,0 +1,76 @@
+---
+# Garde l'adresse IP d'un nœud pendant une coupure du lien Ethernet
+# (incident d'octobre 2026, remédiation R1) : NetworkManager, réglage par
+# interface `ignore-carrier`. Sans lui, chaque coupure retire l'IP du nœud et
+# l'API Kubernetes, sondée sur cette IP, redémarre en boucle.
+#
+# Configuration d'hôte, donc Ansible et pas Terraform (ADR-001). Relançable.
+# Ne redémarre PAS NetworkManager (un redémarrage peut lui-même couper le
+# réseau) : recharge seulement sa configuration (README, Installation).
+#
+#   ansible-playbook -i <inventaire> features/networking/node-link/ansible/playbook.yml -K
+#
+# Variable par machine (inventaire local, jamais commité) :
+#   node_link_interface   interface qui porte l'IP du nœud, ex. enp3s0
+- name: Keep the node IP address when the Ethernet link drops
+  hosts: k8s_nodes
+  become: true
+  tasks:
+    - name: Check the interface exists on this host
+      ansible.builtin.assert:
+        that:
+          - node_link_interface is defined
+          - node_link_interface in ansible_facts.interfaces
+        fail_msg: "node_link_interface absente ou inconnue ici (interfaces : {{ ansible_facts.interfaces | join(', ') }})."
+
+    # Filet de sécurité pour un changement réseau À DISTANCE (pas d'accès
+    # physique) : un retour arrière est programmé AVANT le changement ; il
+    # n'est annulé que si Ansible peut encore joindre la machine après. Si le
+    # changement coupait la machine du réseau, elle revient seule à l'état
+    # d'avant au bout de 10 minutes.
+    - name: Schedule an automatic rollback in 10 minutes
+      ansible.builtin.command:
+        cmd: >-
+          systemd-run --unit=homelab-node-link-rollback --on-active=10min
+          /bin/sh -c 'rm -f /etc/NetworkManager/conf.d/90-homelab-node-link.conf && nmcli general reload conf'
+      changed_when: true
+
+    - name: Ignore carrier loss on the node interface
+      ansible.builtin.copy:
+        dest: /etc/NetworkManager/conf.d/90-homelab-node-link.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Géré par Ansible (features/networking/node-link). Garde la connexion
+          # active, donc l'IP, quand le lien tombe (incident d'octobre 2026, R1).
+          [device-homelab-node-link]
+          match-device=interface-name:{{ node_link_interface }}
+          ignore-carrier=yes
+      notify: Reload NetworkManager configuration
+
+    - name: Check NetworkManager parses the setting
+      ansible.builtin.command:
+        cmd: NetworkManager --print-config
+      register: node_link_config
+      changed_when: false
+      failed_when: "'ignore-carrier=yes' not in node_link_config.stdout"
+
+    - name: Apply now (reload), before checking we can still reach the host
+      ansible.builtin.meta: flush_handlers
+
+    - name: Check the host is still reachable after the change
+      ansible.builtin.wait_for_connection:
+        timeout: 120
+
+    - name: Cancel the automatic rollback (the host is reachable)
+      ansible.builtin.systemd:
+        name: homelab-node-link-rollback.timer
+        state: stopped
+
+  handlers:
+    # `conf` seulement : pas de redémarrage du DNS ni du service.
+    - name: Reload NetworkManager configuration
+      ansible.builtin.command:
+        cmd: nmcli general reload conf
+      changed_when: true
