@@ -145,6 +145,12 @@ root token pour un token à durée de vie limitée après le setup initial
 
 ## 8. Backup / Recovery
 
+**Migration vers `raft` préparée** (ADR-014, P2) : variable
+`vault_storage_backend` (`file` par défaut, aucun changement tant qu'elle
+n'est pas modifiée) et [runbook de migration](../../../docs/runbooks/vault-raft-migration.md),
+jamais exécuté. Une fois en `raft`, les instantanés à chaud remplacent les
+limites décrites ci-dessous.
+
 - **Storage `file`** : pas de commande `vault operator raft snapshot` (ça
   n'existe qu'avec le backend Raft). La sauvegarde consiste à copier le
   contenu du volume `/vault/data` du pod (`kubectl cp`) pendant un arrêt

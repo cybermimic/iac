@@ -174,7 +174,10 @@ l'acter dans une ADR avant d'implémenter.
 ## Validation
 
 `./hack/test.sh` : un `SKIP` n'est **pas** un `OK`. Signaler explicitement
-quels checks n'ont pas tourné. `terraform fmt` vert ≠ `terraform validate`
+quels checks n'ont pas tourné. Il rend aussi chaque `Application` ArgoCD
+(`hack/check-apps.py` : schémas, images et sources épinglées ; dépôts privés
+en SKIP) et vérifie la documentation (`hack/check-docs.py` : liens, numéros
+d'ADR uniques, sections des README de feature) — mêmes contrôles qu'en CI. `terraform fmt` vert ≠ `terraform validate`
 vert ≠ `plan` propre.
 
 ## Naming

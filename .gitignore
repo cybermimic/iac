@@ -46,3 +46,6 @@ bootstrap/ansible/inventory/hosts.yml
 
 # Local tooling
 .direnv/
+
+# Python
+__pycache__/

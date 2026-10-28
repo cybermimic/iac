@@ -106,7 +106,9 @@ Keycloak, l'opérateur et ses CRDs partagent une version (ADR-012) :
 remplacer les 5 fichiers de `gitops/operator/` par ceux du tag visé
 (`https://github.com/keycloak/keycloak-k8s-resources/tree/<version>/kubernetes`),
 lire les release notes (changements de schéma de base possibles), `plan`
-visuel via `git diff`, laisser ArgoCD synchroniser. `keycloak-config-cli`
+visuel via `git diff`, laisser ArgoCD synchroniser. Les 4 CRDs sont
+exclues de `yamllint` (`.yamllint.yml`) : les copier telles quelles, sans
+les reformater. `keycloak-config-cli`
 : aligner sa version sur celle de Keycloak.
 
 ## Rollback
