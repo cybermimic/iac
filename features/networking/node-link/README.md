@@ -47,6 +47,14 @@ ansible-playbook ../../features/networking/node-link/ansible/playbook.yml --chec
 ansible-playbook ../../features/networking/node-link/ansible/playbook.yml -K
 ```
 
+**Changement à distance** : avant de modifier quoi que ce soit, le playbook
+programme sur la machine un **retour arrière automatique dans 10 minutes**
+(`systemd-run`), applique le réglage, vérifie qu'il peut encore joindre la
+machine, et seulement alors annule le retour arrière. Si le réglage coupait
+la machine du réseau, elle revient seule à l'état d'avant. Si le playbook
+échoue en cours de route, le retour arrière s'exécute aussi : relancer le
+playbook une fois la cause comprise.
+
 Le playbook **recharge** la configuration (`nmcli general reload conf`) mais
 ne **redémarre pas** NetworkManager : un redémarrage peut lui-même couper le
 réseau. La documentation prévient que certains réglages ne s'appliquent

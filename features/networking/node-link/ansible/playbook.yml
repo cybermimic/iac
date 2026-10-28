@@ -23,6 +23,18 @@
           - node_link_interface in ansible_facts.interfaces
         fail_msg: "node_link_interface absente ou inconnue ici (interfaces : {{ ansible_facts.interfaces | join(', ') }})."
 
+    # Filet de sécurité pour un changement réseau À DISTANCE (pas d'accès
+    # physique) : un retour arrière est programmé AVANT le changement ; il
+    # n'est annulé que si Ansible peut encore joindre la machine après. Si le
+    # changement coupait la machine du réseau, elle revient seule à l'état
+    # d'avant au bout de 10 minutes.
+    - name: Schedule an automatic rollback in 10 minutes
+      ansible.builtin.command:
+        cmd: >-
+          systemd-run --unit=homelab-node-link-rollback --on-active=10min
+          /bin/sh -c 'rm -f /etc/NetworkManager/conf.d/90-homelab-node-link.conf && nmcli general reload conf'
+      changed_when: true
+
     - name: Ignore carrier loss on the node interface
       ansible.builtin.copy:
         dest: /etc/NetworkManager/conf.d/90-homelab-node-link.conf
@@ -43,6 +55,18 @@
       register: node_link_config
       changed_when: false
       failed_when: "'ignore-carrier=yes' not in node_link_config.stdout"
+
+    - name: Apply now (reload), before checking we can still reach the host
+      ansible.builtin.meta: flush_handlers
+
+    - name: Check the host is still reachable after the change
+      ansible.builtin.wait_for_connection:
+        timeout: 120
+
+    - name: Cancel the automatic rollback (the host is reachable)
+      ansible.builtin.systemd:
+        name: homelab-node-link-rollback.timer
+        state: stopped
 
   handlers:
     # `conf` seulement : pas de redémarrage du DNS ni du service.
