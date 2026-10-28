@@ -41,13 +41,16 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | Feature | Statut |
 |---|---|
 | `networking/metallb` | ✅ Déployé — IP joignables depuis le LAN depuis le 2026-09-27 (annonce L2 corrigée) |
+| `networking/node-link` | ⏳ Garde l'IP du nœud pendant une coupure du lien (R1 de l'incident d'octobre 2026) : playbook écrit, jamais exécuté ([README](features/networking/node-link/README.md)) |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
+| `storage/backups` | ⏳ Sauvegarde chiffrée d'etcd et de l'état Terraform vers disque USB : playbook écrit et testé en conteneur, jamais exécuté — attend la clé publique `age` et le disque ([README](features/storage/backups/README.md)) |
 | `security/vault` | ✅ Déployé, initialisé, sur `https://192.168.1.243:8200` (TLS de bout en bout, CA interne) — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress` (Traefik) | ✅ Ingress **public** sur `192.168.1.240` (classe non par défaut, namespaces autorisés : `inner-riddle`, `keycloak`) + Let's Encrypt (production), ports 80/443 redirigés ([ADR-009](docs/adr/ADR-009-public-exposure.md)) |
 | `networking/lan-dns` (CoreDNS) | 🗑️ Supprimé le 2026-10-12 ([ADR-007](docs/adr/ADR-007-lan-dns.md) abandonné, [incident](docs/incidents/2026-09-28-lan-dns-outage.md)) |
 | `security/cert-manager` (CA interne) | ✅ Déployé — CA « Homelab Root CA » (limitée à `homelab.lan`), ClusterIssuer `homelab-ca` ; CA à installer sur les postes ([certificat](docs/homelab-root-ca.crt)) |
 | `delivery/argocd` | ✅ Déployé sur `https://192.168.1.244`, Application racine app-of-apps active ([ADR-008](docs/adr/ADR-008-gitops-layout.md)) |
+| Application fact-check | 📝 Planifiée — [dépôt privé](https://github.com/cybermimic/fact-check) créé, conception documentée dans le dépôt — [plan fact-check](docs/plans/fact-check.md) |
 | `security/external-secrets` | ✅ Déployé par ArgoCD, `ClusterSecretStore` `vault` valide (Vault en TLS sur `192.168.1.243`) |
 | `delivery/registry` (Zot) | ✅ Déployé sur `https://192.168.1.242`, approuvé par containerd ([ADR-010](docs/adr/ADR-010-container-registry.md)) |
 | `security/keycloak` (fournisseur d'identité) | ✅ Déployé par ArgoCD — realm `inner-riddle` public sur `https://auth.cybermimic.com`, console d'administration sur `https://192.168.1.245:8443` ([ADR-012](docs/adr/ADR-012-identity-keycloak.md)) |

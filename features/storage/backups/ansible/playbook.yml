@@ -1,0 +1,139 @@
+---
+# Sauvegarde quotidienne de l'hôte de plan de contrôle (ADR-016) : instantané
+# etcd et état Terraform, chiffrés avec age, vers un disque monté qui n'est pas
+# celui du NucBox. Configuration d'hôte, donc Ansible et pas Terraform
+# (ADR-001). Relançable.
+#
+#   ansible-playbook -i <inventaire> features/storage/backups/ansible/playbook.yml -K
+#
+# Variables (inventaire local, jamais commité) :
+#   backup_destination          point de montage du disque de sauvegarde, ex. /mnt/backup
+#   backup_terraform_state_dir  répertoire d'état Terraform (docs/operations.md)
+- name: Back up etcd and the Terraform state, encrypted, to an external disk
+  hosts: k8s_control_plane
+  become: true
+  vars:
+    backup_age_package: "age=1.2.1-1build1"
+    backup_etcd_version: "3.6.8" # même version que l'etcd du cluster
+    backup_etcd_sha256: "cf9cfe91a4856cb90eed9c99e6aee4b708db2c7888b88a6f116281f04b0ea693"
+    backup_recipients_file: "{{ playbook_dir }}/../age-recipients.txt"
+  tasks:
+    - name: Check required variables
+      ansible.builtin.assert:
+        that:
+          - backup_destination is defined and backup_destination is match('^/')
+          - backup_terraform_state_dir is defined and backup_terraform_state_dir is match('^/')
+        fail_msg: backup_destination et backup_terraform_state_dir (chemins absolus) sont requis.
+
+    # La clé publique de l'opérateur, versionnée dans ce repo (ce n'est pas un
+    # secret). Absente = rien à chiffrer : on s'arrête.
+    - name: Check the operator's age public key is in the repo
+      ansible.builtin.assert:
+        that:
+          - lookup('ansible.builtin.file', backup_recipients_file, errors='ignore') is match('^age1')
+        fail_msg: >-
+          features/storage/backups/age-recipients.txt absent ou invalide : y mettre
+          la clé publique age de l'opérateur (README, Installation).
+
+    - name: Look for the etcd static pod manifest
+      ansible.builtin.stat:
+        path: /etc/kubernetes/manifests/etcd.yaml
+      register: backup_etcd_manifest
+
+    - name: Refuse a host without a local etcd
+      ansible.builtin.assert:
+        that: backup_etcd_manifest.stat.exists
+        fail_msg: Pas d'etcd local ici (/etc/kubernetes/manifests/etcd.yaml absent).
+
+    - name: Install age
+      ansible.builtin.apt:
+        name: "{{ backup_age_package }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Hold age package (never auto-upgrade silently)
+      ansible.builtin.dpkg_selections:
+        name: age
+        selection: hold
+
+    - name: Download etcd release (etcdctl), checksum pinned
+      ansible.builtin.get_url:
+        url: "https://github.com/etcd-io/etcd/releases/download/v{{ backup_etcd_version }}/etcd-v{{ backup_etcd_version }}-linux-amd64.tar.gz"
+        dest: "/var/cache/etcd-v{{ backup_etcd_version }}-linux-amd64.tar.gz"
+        checksum: "sha256:{{ backup_etcd_sha256 }}"
+        mode: "0644"
+
+    - name: Install etcdctl
+      ansible.builtin.unarchive:
+        src: "/var/cache/etcd-v{{ backup_etcd_version }}-linux-amd64.tar.gz"
+        dest: /usr/local/bin
+        remote_src: true
+        include: ["etcd-v{{ backup_etcd_version }}-linux-amd64/etcdctl"]
+        extra_opts: ["--strip-components=1"]
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create the configuration directory
+      ansible.builtin.file:
+        path: /etc/homelab-backup
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the operator's age public key
+      ansible.builtin.copy:
+        src: "{{ backup_recipients_file }}"
+        dest: /etc/homelab-backup/recipients.txt
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install the backup script
+      ansible.builtin.template:
+        src: homelab-backup.sh.j2
+        dest: /usr/local/sbin/homelab-backup
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Install the backup service and its daily timer
+      ansible.builtin.copy:
+        dest: "/etc/systemd/system/{{ item.name }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: "{{ item.content }}"
+      loop:
+        - name: homelab-backup.service
+          content: |
+            [Unit]
+            Description=Encrypted backup of etcd and the Terraform state (ADR-016)
+
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/local/sbin/homelab-backup
+        - name: homelab-backup.timer
+          content: |
+            [Unit]
+            Description=Daily encrypted backup (ADR-016)
+
+            [Timer]
+            # Après les sauvegardes applicatives de 03:30 ; rattrapée au
+            # démarrage si la machine était éteinte à l'heure prévue.
+            OnCalendar=*-*-* 04:15:00
+            Persistent=true
+
+            [Install]
+            WantedBy=timers.target
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Enable the daily timer
+      ansible.builtin.systemd:
+        name: homelab-backup.timer
+        enabled: true
+        state: started
+        daemon_reload: true
