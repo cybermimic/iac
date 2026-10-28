@@ -1,8 +1,11 @@
 # ADR-014 — Secrets et reconstruction de la plateforme
 
-**Statut : Proposée** (2026-10-27). Les choix marqués « recommandé » sont
-des propositions de l'agent ; l'opérateur tranche chaque problème (P1 à P4)
-avant toute mise en œuvre.
+**Statut : Acceptée** (2026-10-28) : toutes les recommandations sont
+retenues par l'opérateur — P1 A (générateur External Secrets +
+`PushSecret` `IfNotExists`), P2 D1 (stockage `raft` + instantanés),
+P3 E1 (copie chiffrée `age` hors ligne de la CA, même clé que les
+sauvegardes de l'[ADR-016](ADR-016-backups.md)), P4 F1 (secrets tiers
+couverts par les instantanés).
 
 ## Contexte
 

@@ -21,8 +21,9 @@ Secrets du cluster (noms et types seulement, jamais les valeurs).
 | Secret | Où | Sauvegarde aujourd'hui | Si perdu |
 |---|---|---|---|
 | Clés d'unseal et root token de Vault | Opérateur, hors ligne | Chez l'opérateur | Vault et tout son contenu définitivement illisibles |
-| **Clé privée de la CA interne** « Homelab Root CA » | Secret Kubernetes `cert-manager/homelab-root-ca` (créé par cert-manager, Terraform `security/cert-manager`) | **Aucune** | Nouvelle CA : `docs/homelab-root-ca.crt` et les empreintes épinglées des scripts clients changent, certificat à réinstaller sur chaque poste |
+| **Clé privée de la CA interne** « Homelab Root CA » | Secret Kubernetes `cert-manager/homelab-root-ca` (créé par cert-manager, Terraform `security/cert-manager`) | **Aucune** tant que l'opérateur n'a pas fait l'export chiffré ([procédure](../features/security/cert-manager/README.md#sauvegarder-la-clé-de-la-ca-adr-014-p3)) | Nouvelle CA : `docs/homelab-root-ca.crt` et les empreintes épinglées des scripts clients changent, certificat à réinstaller sur chaque poste |
 | PKI du cluster et kubeconfig administrateur | NucBox, `/etc/kubernetes/pki`, `/etc/kubernetes/admin.conf` | Aucune | Nouveau cluster, nouveaux kubeconfigs |
+| **Clé privée `age` des sauvegardes** (et de la copie de la CA) | Poste de l'opérateur, gestionnaire de mots de passe + copie papier | Chez l'opérateur | Toutes les sauvegardes chiffrées illisibles ([ADR-016](adr/ADR-016-backups.md)) ; la clé **publique** est dans `features/storage/backups/age-recipients.txt` |
 | Clé SSH de l'opérateur (GitHub + NucBox) | Poste de l'opérateur, `~/.ssh/github` | Chez l'opérateur | Accès à refaire (dette connue : une seule clé pour deux usages, voir [operations.md](operations.md)) |
 
 L'état Terraform (`/home/hoarauv/.homelab-platform-state/` sur le NucBox,

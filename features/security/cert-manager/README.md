@@ -188,6 +188,62 @@ déjà installé (relançables sans risque) et savent le retirer.
   activer la confiance totale dans « Informations > Réglages des
   certificats ».
 
+## Sauvegarder la clé de la CA (ADR-014, P3)
+
+La clé privée de « Homelab Root CA » n'existe que dans le Secret
+`cert-manager/homelab-root-ca`. Perdue, une reconstruction crée une
+**nouvelle** CA : certificat à réinstaller sur chaque poste, empreintes et
+`caBundle` à changer ([ADR-014](../../../docs/adr/ADR-014-secrets-for-rebuild.md)).
+Elle ne peut pas être sauvegardée dans Vault : il faut la CA pour joindre
+Vault.
+
+**Export, par l'opérateur** (une fois, puis à chaque renouvellement de la CA,
+valable jusqu'en 2036), depuis la racine du repo, sur une machine qui a
+`kubectl`, `jq` et `age`. Le Secret ne passe que par un tube : il n'est
+jamais écrit en clair sur disque, et il est chiffré pour la clé publique
+`age` des sauvegardes ([ADR-016](../../../docs/adr/ADR-016-backups.md),
+`features/storage/backups/age-recipients.txt`) :
+
+```bash
+kubectl -n cert-manager get secret homelab-root-ca -o json \
+  | jq '{apiVersion, kind, type, data,
+         metadata: {name: .metadata.name, namespace: .metadata.namespace,
+                    annotations: .metadata.annotations, labels: .metadata.labels}}' \
+  | age -R features/storage/backups/age-recipients.txt -o homelab-root-ca.json.age
+head -c 21 homelab-root-ca.json.age; echo     # « age-encryption.org/v1 »
+```
+
+`jq` ne garde que ce qui sert à la restauration : les données et les
+annotations par lesquelles cert-manager reconnaît le Secret, sans les champs
+propres au cluster d'origine (`uid`, `resourceVersion`…).
+
+Ranger `homelab-root-ca.json.age` **hors ligne** (gestionnaire de mots de
+passe et disque de sauvegarde, dossier `ca/`). Le fichier est chiffré : il
+ne vaut rien sans la clé privée `age`.
+
+**Vérifier la copie** (sur le poste de l'opérateur, qui détient la clé
+privée) : l'empreinte du certificat contenu doit être celle de
+`docs/homelab-root-ca.crt`, sans jamais afficher la clé privée :
+
+```bash
+age -d -i ~/homelab-backup.key homelab-root-ca.json.age \
+  | jq -r '.data["tls.crt"]' | base64 -d | openssl x509 -noout -fingerprint -sha256
+openssl x509 -in docs/homelab-root-ca.crt -noout -fingerprint -sha256
+```
+
+**Restaurer** (reconstruction, avant le second `terraform apply` qui crée la
+CA) : une fois cert-manager installé (premier temps de l'Installation),
+recréer le Secret, puis appliquer le reste ; cert-manager reprend la CA
+existante au lieu d'en générer une nouvelle :
+
+```bash
+age -d -i ~/homelab-backup.key homelab-root-ca.json.age | kubectl apply -f -
+```
+
+La reprise par cert-manager (aucune réémission) est à confirmer lors du
+premier exercice de reconstruction : `kubectl -n cert-manager get
+certificate homelab-root-ca` doit être prêt **et** l'empreinte inchangée.
+
 ## Upgrade
 
 Lire les release notes cert-manager (les versions mineures peuvent

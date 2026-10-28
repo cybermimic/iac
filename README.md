@@ -41,7 +41,9 @@ une machine Ubuntu (NucBoxG3-Plus, 16 Go RAM).
 | Feature | Statut |
 |---|---|
 | `networking/metallb` | ✅ Déployé — IP joignables depuis le LAN depuis le 2026-09-27 (annonce L2 corrigée) |
+| `networking/node-link` | ⏳ Garde l'IP du nœud pendant une coupure du lien (R1 de l'incident d'octobre 2026) : playbook écrit, jamais exécuté ([README](features/networking/node-link/README.md)) |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
+| `storage/backups` | ⏳ Sauvegarde chiffrée d'etcd et de l'état Terraform vers disque USB : playbook écrit et testé en conteneur, jamais exécuté — attend la clé publique `age` et le disque ([README](features/storage/backups/README.md)) |
 | `security/vault` | ✅ Déployé, initialisé, sur `https://192.168.1.243:8200` (TLS de bout en bout, CA interne) — unseal manuel après chaque redémarrage |
 | `bootstrap/ansible` (containerd + kubeadm) | ⚠️ Écrit, validé syntaxiquement, jamais exécuté contre une machine réelle |
 | `networking/ingress` (Traefik) | ✅ Ingress **public** sur `192.168.1.240` (classe non par défaut, namespaces autorisés : `inner-riddle`, `keycloak`) + Let's Encrypt (production), ports 80/443 redirigés ([ADR-009](docs/adr/ADR-009-public-exposure.md)) |
