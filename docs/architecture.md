@@ -56,6 +56,7 @@ single-node.
 | Kubernetes (kubeadm, single-node, Calico) | ✅ En place — réseau des pods migré en `10.244.0.0/16` le 2026-09-27 ([runbook](runbooks/calico-pod-cidr-migration.md)) |
 | `networking/metallb` | ✅ Déployé |
 | `storage/local-path` | ✅ Déployé, StorageClass par défaut |
+| `storage/backups` | ⏳ Sauvegarde chiffrée d'etcd et de l'état Terraform vers disque USB : playbook écrit et testé en conteneur, jamais exécuté — attend la clé publique `age` et le disque ([README](../features/storage/backups/README.md)) |
 | `security/vault` | ✅ Déployé, initialisé, `https://192.168.1.243:8200` (TLS de bout en bout) — unseal manuel (humain) après chaque redémarrage |
 | `networking/ingress` (Traefik) | ✅ Ingress public + Let's Encrypt, ports pas encore redirigés ([ADR-009](adr/ADR-009-public-exposure.md)) |
 | `networking/lan-dns` | 🗑️ Supprimé le 2026-10-12 ([ADR-007](adr/ADR-007-lan-dns.md) abandonné) |
