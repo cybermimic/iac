@@ -57,7 +57,7 @@ indisponible.
 | Carte réseau | Intel **I226-V** (rev 04), pilote `igc`, noyau 7.0.0-34. Les coupures de lien de cette famille (I225/I226) sont un problème connu, lié selon les cas au pilote, au micrologiciel, à la gestion d'énergie PCIe (ASPM) ou au partenaire de lien |
 | Économie d'énergie Ethernet (EEE) | **Déjà désactivée** (`ethtool --show-eee`) : pas la cause |
 | Lien négocié | 1000 Mb/s ; partenaire de lien : la Freebox, sans switch d'après [platform-overview](../platform-overview.md) (à confirmer) |
-| Coupures longues | **Cause inconnue** : câble débranché, Freebox éteinte ou en mise à jour, absence ? À confirmer par l'opérateur |
+| Coupures longues | **Involontaires** (réponse de l'opérateur, 2026-10-28). Le NucBox n'a pas redémarré (démarré le 29/09) ; le noyau ne journalise **aucune erreur de la carte** (ni réinitialisation ni blocage), seulement des pertes et retours de lien : la piste câble / port de la Freebox est la plus probable. Retours de lien en journée (19:58, 12:43, 16:29, 12:40) : coïncidence, ou intervention involontaire sur place, impossible à trancher d'ici |
 
 ## Questions pour l'opérateur
 
@@ -68,7 +68,16 @@ indisponible.
 3. Le câble est-il récent, en Cat5e ou mieux, et branché directement sur la
    Freebox ?
 
-## Remédiations proposées (à décider)
+## Contraintes (2026-10-28)
+
+L'opérateur **n'a pas d'accès physique** au NucBox pour l'instant, et n'a
+rien à y brancher. Conséquences : R3 (câble, port) est **reportée** au
+prochain accès ; R1 devient la seule remédiation applicable, **à distance** —
+une erreur de configuration réseau rendrait la machine injoignable jusqu'à
+une intervention sur place, d'où un filet de sécurité à prévoir (retour
+arrière automatique si la machine n'est plus joignable).
+
+## Remédiations proposées
 
 Aucune n'est appliquée. Ce sont des réglages d'hôte : rôle Ansible
 ([ADR-001](../adr/ADR-001-terraform-scope.md)), exécuté par l'opérateur (`-K`).
@@ -89,7 +98,7 @@ que l'outil d'observabilité est choisi, R2 et R4 seulement si nécessaire.
 | Action | Statut |
 |---|---|
 | Diagnostic (journaux noyau, kubelet, NetworkManager) | Fait (2026-10-27) |
-| Réponses de l'opérateur aux questions ci-dessus | À faire |
+| Réponses de l'opérateur : coupures involontaires ; pas d'accès physique pour l'instant | Fait (2026-10-28) |
 | Choix des remédiations (2026-10-28) : **R1 et R3 retenues**, R5 avec l'outil d'observabilité, R2 et R4 seulement si les coupures persistent | Fait |
 | R1 : playbook `features/networking/node-link` (`ignore-carrier`) | Écrit, à exécuter par l'opérateur |
-| R3 : autre câble, autre port de la Freebox | À faire (opérateur) |
+| R3 : autre câble, autre port de la Freebox | Reportée : pas d'accès physique |
