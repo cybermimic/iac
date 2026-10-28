@@ -1,6 +1,6 @@
-# Runner scale set « homelab » du dépôt privé cybermimic/fact-check
-# (ADR-011) : tous ses workflows tournent ici (`runs-on: homelab` par défaut
-# dans ses workflows). Jamais pour un dépôt public.
+# Runner scale set « fact-check » du dépôt privé cybermimic/fact-check
+# (ADR-011) : tous ses workflows tournent ici (variable de dépôt
+# `CI_RUNNER=fact-check`). Jamais pour un dépôt public.
 # Réutilise les ressources du namespace arc-runners livrées avec
 # arc-runners-inner-riddle (secret de la GitHub App, CA interne, NetworkPolicy) :
 # ne pas les dupliquer ici.
@@ -21,8 +21,11 @@ spec:
           githubConfigUrl: https://github.com/cybermimic/fact-check
           # Même GitHub App qu'inner-riddle, installée aussi sur ce dépôt.
           githubConfigSecret: arc-github-app
-          # Libellé utilisé par `runs-on` dans les workflows du dépôt.
-          runnerScaleSetName: homelab
+          # Libellé utilisé par `runs-on` dans les workflows du dépôt. Il nomme
+          # aussi l'AutoscalingRunnerSet et ses Role/ServiceAccount : unique dans
+          # le namespace. « homelab » (celui d'inner-riddle) a fait écraser le
+          # scale set d'inner-riddle le 2026-10-28.
+          runnerScaleSetName: fact-check
           # Aucun runner prêt au repos : ~200-300 Mi de RAM économisés tant que
           # fact-check est peu actif, au prix de 6-7 min d'attente par job
           # (démarrage d'un pod neuf). Passer à 1 si l'attente gêne.

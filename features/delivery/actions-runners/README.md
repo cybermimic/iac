@@ -18,7 +18,7 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 | `gitops/apps/repositories/arc-oci.yaml` | Déclare à ArgoCD le dépôt OCI public des charts ARC (`ghcr.io`), sans identifiant |
 | `gitops/apps/arc-controller.yaml` | Contrôleur ARC (`arc-systems`), chart `gha-runner-scale-set-controller` 0.15.0 |
 | `gitops/apps/arc-runners-inner-riddle.yaml` | Scale set `homelab` de `cybermimic/inner-riddle` (`arc-runners`), chart `gha-runner-scale-set` 0.15.0 ; livre aussi les ressources partagées du namespace (ligne suivante) |
-| `gitops/apps/arc-runners-fact-check.yaml` | Scale set `homelab` de `cybermimic/fact-check`, même chart ; `minRunners: 0`, `maxRunners: 1` |
+| `gitops/apps/arc-runners-fact-check.yaml` | Scale set `fact-check` de `cybermimic/fact-check`, même chart ; `minRunners: 0`, `maxRunners: 1` |
 | `gitops/inner-riddle/` (ici) | Ressources **partagées par tout le namespace** `arc-runners`, malgré le nom du dossier : `ExternalSecret` de la GitHub App, `ConfigMap` de la CA interne, `NetworkPolicy` (`podSelector: {}`) |
 
 ## Fonctionnement
@@ -68,7 +68,11 @@ deux runners au plus. Stockage : `emptyDir` (effacé à la fin du job).
 1. Installer la GitHub App sur ce dépôt (GitHub → organisation → Settings →
    GitHub Apps → l'App des runners → Configure → *Repository access*).
 2. Copier `gitops/apps/arc-runners-fact-check.yaml` (nouveaux `name`,
-   `releaseName`, `githubConfigUrl`). **Ne pas** copier le dossier
+   `releaseName`, `githubConfigUrl` **et `runnerScaleSetName`**). Le
+   `runnerScaleSetName` nomme l'`AutoscalingRunnerSet` et ses
+   `Role`/`ServiceAccount` : il doit être **unique dans le namespace**. Le
+   2026-10-28, un second scale set nommé `homelab` a pris le contrôle de
+   celui d'inner-riddle et l'a pointé vers un autre dépôt. **Ne pas** copier le dossier
    `gitops/inner-riddle/` : ses ressources sont communes au namespace, deux
    Applications ArgoCD se disputeraient les mêmes objets.
 3. Dans le dépôt : `runs-on` = le `runnerScaleSetName` (variable
@@ -104,8 +108,11 @@ Revenir aux révisions précédentes des Applications (git revert).
   incorrects, ou App non installée sur le dépôt.
 - `docker: unknown command: docker compose` → le volume
   `docker-cli-plugins` n'est pas monté dans le runner (modèle de pod).
-- Job bloqué « Waiting for a runner » → `runs-on` ne correspond pas à
-  `homelab` (variables `CI_RUNNER` / `RELEASE_RUNNER` du dépôt).
+- Job bloqué « Waiting for a runner » → `runs-on` ne correspond pas au
+  `runnerScaleSetName` du dépôt (variables `CI_RUNNER` / `RELEASE_RUNNER`).
+- Une Application `arc-runners-*` reste OutOfSync et l'`AutoscalingRunnerSet`
+  pointe vers un autre dépôt (`spec.githubConfigUrl`) → deux scale sets
+  portent le même `runnerScaleSetName`.
 - `x509: certificate signed by unknown authority` au `docker push` → la
   `ConfigMap` `homelab-ca` n'est pas montée, ou l'adresse du registre
   diffère de `192.168.1.242`.
