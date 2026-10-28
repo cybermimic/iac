@@ -89,6 +89,8 @@ Aucune n'est appliquée. Ce sont des réglages d'hôte : rôle Ansible
 | R3 | **Traiter la cause physique** : autre câble, autre port de la Freebox ; puis le switch 2,5 GbE prévu ([plan fleet-manager](../plans/fleet-manager.md)) change de partenaire de lien | Moins de coupures | Matériel |
 | R4 | Si les coupures persistent : désactiver ASPM pour la carte (contournement courant pour I225/I226), après R3 | Moins de coupures si l'ASPM est en cause | Paramètre noyau, redémarrage |
 | R5 | **Être prévenu** : alerte sur perte de lien et sur API indisponible (observabilité, à choisir) ; en attendant, `hack/status.sh` | Plus de panne de 3 jours découverte par hasard | Voir les options d'observabilité |
+| R6 | **Relance automatique de la carte** : un minuteur systemd lit `/sys/class/net/enp3s0/carrier` chaque minute ; lien tombé depuis 5 min → `ip link set` down/up ; 15 min → rechargement du pilote `igc` ; ensuite au plus une tentative par heure. Jamais de redémarrage de la machine (il scellerait Vault) | Rétablissement sans intervention si la carte est bloquée ; surtout **diagnostic** : le journal dira si une relance logicielle suffit (carte → R4) ou non (physique → R3) | Faible : n'agit que lien déjà tombé. Rechargement du pilote à tester une fois sur place avant de l'activer |
+| R7 | **Wi-Fi de secours** : la carte Wi-Fi du NucBox rejoint le Wi-Fi existant de la Freebox | Machine joignable pendant une coupure Ethernet (services K8s toujours indisponibles) | Mot de passe Wi-Fi à ranger sur la machine |
 
 Recommandation : **R1 et R3 d'abord** (peu coûteux, effet immédiat), R5 dès
 que l'outil d'observabilité est choisi, R2 et R4 seulement si nécessaire.
@@ -101,4 +103,6 @@ que l'outil d'observabilité est choisi, R2 et R4 seulement si nécessaire.
 | Réponses de l'opérateur : coupures involontaires ; pas d'accès physique pour l'instant | Fait (2026-10-28) |
 | Choix des remédiations (2026-10-28) : **R1 et R3 retenues**, R5 avec l'outil d'observabilité, R2 et R4 seulement si les coupures persistent | Fait |
 | R1 : playbook `features/networking/node-link` (`ignore-carrier`) | Écrit, à exécuter par l'opérateur |
-| R3 : autre câble, autre port de la Freebox | Reportée : pas d'accès physique |
+| R3 : autre câble, autre port de la Freebox | Reportée : pas d'accès physique pour l'instant (accès possible au besoin, l'opérateur se connecte en SSH via VPN) |
+| R6 : relance automatique de la carte | Retenue, **reportée** (décision de l'opérateur, 2026-10-28) |
+| R7 : Wi-Fi de secours | Écartée pour l'instant (2026-10-28) |
