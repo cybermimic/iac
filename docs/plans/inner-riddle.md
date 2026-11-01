@@ -377,7 +377,7 @@ Aucune migration de schéma, aucune valeur du chart à changer : seul
 Retour arrière : remettre `targetRevision: v0.3.0` (aucune migration à
 défaire).
 
-### 11. Version `v0.5.0` — préparé
+### 11. Version `v0.5.0` — ✅ en production
 
 Suggestions sur la carte (thérapeute et patient), fonctionnalités
 activables par carte, questionnaires ajoutés à la carte, visite guidée.
@@ -398,6 +398,28 @@ aucune valeur du chart à changer : seul `targetRevision` passe à `v0.5.0`.
 
 Retour arrière : remettre `targetRevision: v0.4.0` **et** restaurer la
 copie SQLite `backup-v0-5-0` (procédure « Restaurer toute la base » du
+dépôt inner-riddle, `docs/deployment.md`).
+
+### 12. Version `v0.6.0` — préparé
+
+Bibliothèque de questionnaires par utilisateur (proposée par le thérapeute),
+format v2 (un questionnaire propose un motif relié à la carte), éditeur de
+questionnaires dans l'interface. **Migrations de schéma 0009 à 0011**
+(appliquées au démarrage du backend), aucune valeur du chart à changer :
+seul `targetRevision` passe à `v0.6.0`.
+
+1. étiquette `v0.6.0` publiée par le workflow `Release` (images
+   `192.168.1.242/inner-riddle/{backend,frontend}:0.6.0`) ;
+2. sauvegarde juste avant la synchro, **obligatoire** (les migrations ne
+   vont que vers l'avant) :
+   `kubectl -n inner-riddle create job --from=cronjob/inner-riddle-backup backup-v0-6-0` ;
+3. fusion, puis synchronisation manuelle de l'Application inner-riddle
+   (diff relu : seules les étiquettes d'image et de version changent) ;
+4. contrôle : `https://inner-riddle.cybermimic.com` répond, la base est en
+   révision `0011`.
+
+Retour arrière : remettre `targetRevision: v0.5.0` **et** restaurer la
+copie SQLite `backup-v0-6-0` (procédure « Restaurer toute la base » du
 dépôt inner-riddle, `docs/deployment.md`).
 
 ## Mises à jour de documentation attendues
