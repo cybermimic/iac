@@ -19,6 +19,7 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 | `gitops/apps/arc-controller.yaml` | Contrôleur ARC (`arc-systems`), chart `gha-runner-scale-set-controller` 0.15.0 |
 | `gitops/apps/arc-runners-inner-riddle.yaml` | Scale set `homelab` de `cybermimic/inner-riddle` (`arc-runners`), chart `gha-runner-scale-set` 0.15.0 ; livre aussi les ressources partagées du namespace (ligne suivante) |
 | `gitops/apps/arc-runners-fact-check.yaml` | Scale set `fact-check` de `cybermimic/fact-check`, même chart ; `minRunners: 0`, `maxRunners: 1` |
+| `gitops/apps/arc-runners-fleet-manager.yaml` | Scale set `fleet-manager` de `cybermimic/fleet-manager`, même chart ; `minRunners: 0`, `maxRunners: 1` |
 | `gitops/inner-riddle/` (ici) | Ressources **partagées par tout le namespace** `arc-runners`, malgré le nom du dossier : `ExternalSecret` de la GitHub App, `ConfigMap` de la CA interne, `NetworkPolicy` (`podSelector: {}`) |
 
 ## Fonctionnement
@@ -60,7 +61,7 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 
 Contrôleur + un listener par scale set : ~50-100 Mi chacun. Runner prêt au
 repos (runner + dockerd) : ~200-300 Mi pour inner-riddle ; aucun pour
-fact-check (`minRunners: 0`). Pendant un job : ~1-3 Gi par runner selon le build,
+fact-check ni fleet-manager (`minRunners: 0`). Pendant un job : ~1-3 Gi par runner selon le build,
 deux runners au plus. Stockage : `emptyDir` (effacé à la fin du job).
 
 ## Ajouter un dépôt (privé) autorisé
@@ -82,7 +83,7 @@ deux runners au plus. Stockage : `emptyDir` (effacé à la fin du job).
 ## Vérification
 
 ```bash
-kubectl -n argocd get application arc-controller arc-runners-inner-riddle arc-runners-fact-check   # Synced, Healthy
+kubectl -n argocd get application arc-controller arc-runners-inner-riddle arc-runners-fact-check arc-runners-fleet-manager   # Synced, Healthy
 kubectl -n arc-runners get externalsecret arc-github-app                    # SecretSynced
 kubectl -n arc-systems get pods                                             # contrôleur + listener Running
 ```

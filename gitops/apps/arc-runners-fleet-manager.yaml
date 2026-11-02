@@ -1,0 +1,141 @@
+# Runner scale set « fleet-manager » du dépôt privé cybermimic/fleet-manager
+# (ADR-011) : tous ses workflows tournent ici (variable de dépôt
+# `CI_RUNNER=fleet-manager`). Jamais pour un dépôt public.
+# Réutilise les ressources du namespace arc-runners livrées avec
+# arc-runners-inner-riddle (secret de la GitHub App, CA interne, NetworkPolicy) :
+# ne pas les dupliquer ici.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-runners-fleet-manager
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: ghcr.io/actions/actions-runner-controller-charts # OCI, voir repositories/arc-oci.yaml
+      chart: gha-runner-scale-set
+      targetRevision: 0.15.0 # jamais latest, voir CLAUDE.md
+      helm:
+        releaseName: fleet-manager
+        valuesObject:
+          githubConfigUrl: https://github.com/cybermimic/fleet-manager
+          # Même GitHub App qu'inner-riddle, installée aussi sur ce dépôt.
+          githubConfigSecret: arc-github-app
+          # Libellé utilisé par `runs-on` dans les workflows du dépôt. Il nomme
+          # aussi l'AutoscalingRunnerSet et ses Role/ServiceAccount : unique dans
+          # le namespace (voir l'incident du 2026-10-28 dans le README).
+          runnerScaleSetName: fleet-manager
+          # Aucun runner prêt au repos : ~200-300 Mi de RAM économisés tant que
+          # fleet-manager est peu actif, au prix de 6-7 min d'attente par job
+          # (démarrage d'un pod neuf). Passer à 1 si l'attente gêne.
+          minRunners: 0
+          # Un job à la fois (ADR-011, contrainte mémoire).
+          maxRunners: 1
+          # ArgoCD rend le chart sans accès au cluster : le compte du
+          # contrôleur doit être donné explicitement.
+          controllerServiceAccount:
+            namespace: arc-systems
+            name: arc-controller
+          listenerTemplate:
+            spec:
+              containers:
+                - name: listener
+              tolerations:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoSchedule
+          # Modèle Docker-in-Docker du chart (containerMode dind), écrit en
+          # entier pour : épingler les images (le chart utilise :latest),
+          # faire approuver la CA interne par dockerd (registre
+          # https://192.168.1.242) et ajouter le plugin docker compose.
+          template:
+            spec:
+              initContainers:
+                # L'image actions-runner fournit la CLI docker et buildx, mais
+                # pas compose, dont la CI de fleet-manager dépend : on copie le
+                # binaire (statique) de l'image docker CLI officielle, même
+                # version que dockerd, dans un dossier de plugins lu par la CLI.
+                - name: install-compose-plugin
+                  image: docker:29.9.0-cli
+                  command: ["cp", "/usr/local/libexec/docker/cli-plugins/docker-compose", "/plugins/"]
+                  volumeMounts:
+                    - name: docker-cli-plugins
+                      mountPath: /plugins
+                - name: init-dind-externals
+                  image: ghcr.io/actions/actions-runner:2.338.0
+                  command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+                  volumeMounts:
+                    - name: dind-externals
+                      mountPath: /home/runner/tmpDir
+                - name: dind
+                  image: docker:29.9.0-dind
+                  args:
+                    - dockerd
+                    - --host=unix:///var/run/docker.sock
+                    - --group=$(DOCKER_GROUP_GID)
+                  env:
+                    - name: DOCKER_GROUP_GID
+                      value: "123"
+                  securityContext:
+                    privileged: true
+                  restartPolicy: Always
+                  startupProbe:
+                    exec:
+                      command: ["docker", "info"]
+                    initialDelaySeconds: 0
+                    failureThreshold: 24
+                    periodSeconds: 5
+                  volumeMounts:
+                    - name: work
+                      mountPath: /home/runner/_work
+                    - name: dind-sock
+                      mountPath: /var/run
+                    - name: dind-externals
+                      mountPath: /home/runner/externals
+                    # dockerd fait confiance à cette CA pour ce seul registre.
+                    - name: homelab-ca
+                      mountPath: /etc/docker/certs.d/192.168.1.242/ca.crt
+                      subPath: ca.crt
+              containers:
+                - name: runner
+                  image: ghcr.io/actions/actions-runner:2.338.0
+                  command: ["/home/runner/run.sh"]
+                  env:
+                    - name: DOCKER_HOST
+                      value: unix:///var/run/docker.sock
+                    - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
+                      value: "120"
+                  volumeMounts:
+                    - name: work
+                      mountPath: /home/runner/_work
+                    - name: dind-sock
+                      mountPath: /var/run
+                    # Pas /usr/local/lib/docker/cli-plugins : buildx y est déjà.
+                    - name: docker-cli-plugins
+                      mountPath: /usr/local/libexec/docker/cli-plugins
+                      readOnly: true
+              tolerations:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoSchedule
+              volumes:
+                - name: work
+                  emptyDir: {}
+                - name: dind-sock
+                  emptyDir: {}
+                - name: dind-externals
+                  emptyDir: {}
+                - name: homelab-ca
+                  configMap:
+                    name: homelab-ca
+                - name: docker-cli-plugins
+                  emptyDir: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-runners
+  syncPolicy:
+    automated:
+      selfHeal: true
+      # Pas de prune (ADR-008).
+    syncOptions:
+      - CreateNamespace=true
