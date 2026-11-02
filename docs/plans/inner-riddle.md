@@ -444,6 +444,25 @@ Retour arrière : remettre `targetRevision: v0.6.0` **et** restaurer la
 copie SQLite `backup-v0-7-0` (procédure « Restaurer toute la base » du
 dépôt inner-riddle, `docs/deployment.md`).
 
+### 14. Version `v0.8.0` — préparé
+
+Messages d'erreur compréhensibles, en français et à leur place (IR-068),
+et éditeur de questionnaire visuel en trois étapes (IR-069) : changements
+d'interface et de messages seulement. **Aucune migration de schéma**,
+aucune valeur du chart à changer.
+
+1. étiquette `v0.8.0` publiée par le workflow `Release` (images
+   `192.168.1.242/inner-riddle/{backend,frontend}:0.8.0`) ;
+2. sauvegarde juste avant la synchro, par prudence :
+   `kubectl -n inner-riddle create job --from=cronjob/inner-riddle-backup backup-v0-8-0` ;
+3. fusion, puis synchronisation manuelle de l'Application inner-riddle
+   (diff relu : seules les étiquettes d'image et de version changent) ;
+4. contrôle : `https://inner-riddle.cybermimic.com` répond ; l'éditeur
+   de questionnaires s'ouvre sur ses trois étapes.
+
+Retour arrière : remettre `targetRevision: v0.7.0` (pas de migration :
+la base reste compatible).
+
 ## Mises à jour de documentation attendues
 
 Avec chaque étape : README de la feature, tableau d'état du README racine,
