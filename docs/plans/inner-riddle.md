@@ -422,6 +422,28 @@ Retour arrière : remettre `targetRevision: v0.5.0` **et** restaurer la
 copie SQLite `backup-v0-6-0` (procédure « Restaurer toute la base » du
 dépôt inner-riddle, `docs/deployment.md`).
 
+### 13. Version `v0.7.0` — préparé
+
+Aucun rôle global : tous les droits viennent du partage des cartes (D-78
+du dépôt inner-riddle, conforme à l'ADR-012 : Keycloak ne porte que
+l'identité). **Migration de schéma 0012** (suppression de `users.role`),
+aucune valeur du chart à changer : la production est en mode `oidc` et ne
+définit ni `readerRole` ni `AUTH_ACCOUNTS`.
+
+1. étiquette `v0.7.0` publiée par le workflow `Release` (images
+   `192.168.1.242/inner-riddle/{backend,frontend}:0.7.0`) ;
+2. sauvegarde juste avant la synchro, **obligatoire** (les migrations ne
+   vont que vers l'avant) :
+   `kubectl -n inner-riddle create job --from=cronjob/inner-riddle-backup backup-v0-7-0` ;
+3. fusion, puis synchronisation manuelle de l'Application inner-riddle
+   (diff relu : seules les étiquettes d'image et de version changent) ;
+4. contrôle : `https://inner-riddle.cybermimic.com` répond ; le thérapeute
+   lit toujours la carte partagée sans pouvoir la modifier.
+
+Retour arrière : remettre `targetRevision: v0.6.0` **et** restaurer la
+copie SQLite `backup-v0-7-0` (procédure « Restaurer toute la base » du
+dépôt inner-riddle, `docs/deployment.md`).
+
 ## Mises à jour de documentation attendues
 
 Avec chaque étape : README de la feature, tableau d'état du README racine,
