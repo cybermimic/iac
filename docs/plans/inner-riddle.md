@@ -400,7 +400,7 @@ Retour arrière : remettre `targetRevision: v0.4.0` **et** restaurer la
 copie SQLite `backup-v0-5-0` (procédure « Restaurer toute la base » du
 dépôt inner-riddle, `docs/deployment.md`).
 
-### 12. Version `v0.6.0` — préparé
+### 12. Version `v0.6.0` — ✅ en production
 
 Bibliothèque de questionnaires par utilisateur (proposée par le thérapeute),
 format v2 (un questionnaire propose un motif relié à la carte), éditeur de
