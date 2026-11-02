@@ -444,7 +444,7 @@ Retour arrière : remettre `targetRevision: v0.6.0` **et** restaurer la
 copie SQLite `backup-v0-7-0` (procédure « Restaurer toute la base » du
 dépôt inner-riddle, `docs/deployment.md`).
 
-### 14. Version `v0.8.0` — préparé
+### 14. Version `v0.8.0` — ✅ en production
 
 Messages d'erreur compréhensibles, en français et à leur place (IR-068),
 et éditeur de questionnaire visuel en trois étapes (IR-069) : changements
