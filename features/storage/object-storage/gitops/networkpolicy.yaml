@@ -1,0 +1,19 @@
+# L'API S3 n'est joignable que par les applications autorisées (une entrée
+# par namespace consommateur). RPC et administration : aucune entrée, la CLI
+# s'utilise depuis le pod lui-même.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: garage-s3
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: garage
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: fact-check
+      ports:
+        - { protocol: TCP, port: 3900 }

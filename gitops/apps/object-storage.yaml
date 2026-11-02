@@ -1,0 +1,89 @@
+# Stockage objet S3 Garage (ADR-004, niveau `hot` de l'ADR-015), livré par
+# ArgoCD (ADR-008). Interne au cluster uniquement : Service ClusterIP, aucun
+# accès depuis le LAN ni Internet.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: object-storage
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Chart officiel, dans le dépôt de Garage (pas de dépôt Helm publié).
+    - repoURL: https://git.deuxfleurs.fr/Deuxfleurs/garage.git
+      path: script/helm/garage
+      targetRevision: v2.4.1 # chart 0.10.2 — jamais une branche, voir CLAUDE.md
+      helm:
+        releaseName: garage
+        valuesObject:
+          deployment:
+            kind: StatefulSet
+            replicaCount: 1
+          image:
+            repository: dxflrs/amd64_garage
+            tag: v2.4.1
+          # Le chart utilise `busybox:stable` (tag flottant) pour l'init.
+          initImage:
+            repository: busybox
+            tag: 1.38.0
+          garage:
+            # Sans valeur, le chart génère un secret au hasard via `lookup`,
+            # qu'ArgoCD n'exécute pas : différence permanente. Il vient de Vault
+            # (gitops/ de la feature).
+            existingRpcSecret: garage-rpc-secret
+            # Configuration écrite en entier : un seul nœud, sans découverte
+            # Kubernetes (ni CRD ni ClusterRole). L'init du chart remplace
+            # __RPC_SECRET_REPLACE__ par le secret. Pas d'admin_token : l'API
+            # d'administration reste fermée, l'administration passe par la CLI
+            # dans le pod (README).
+            kubernetesSkipCrd: true
+            # Pas de ClusterRole : le chart crée alors un simple Role dans le namespace.
+            noClusterRole: true
+            garageTomlString: |
+              metadata_dir = "/mnt/meta"
+              data_dir = "/mnt/data"
+              db_engine = "lmdb"
+              replication_factor = 1
+              compression_level = 1
+              metadata_auto_snapshot_interval = "6h"
+              rpc_bind_addr = "[::]:3901"
+              rpc_public_addr = "127.0.0.1:3901"
+              rpc_secret = "__RPC_SECRET_REPLACE__"
+
+              [s3_api]
+              s3_region = "garage"
+              api_bind_addr = "[::]:3900"
+              root_domain = ".s3.garage.object-storage.svc"
+
+              [admin]
+              api_bind_addr = "[::]:3903"
+          persistence:
+            enabled: true
+            # local-path ne fait pas respecter ces tailles : elles documentent
+            # l'attente, la limite réelle est le disque du NucBox (operations.md).
+            meta:
+              size: 1Gi
+              storageClass: local-path
+            data:
+              size: 30Gi
+              storageClass: local-path
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+    # Secret RPC (Vault), politique réseau.
+    - repoURL: https://github.com/cybermimic/iac.git
+      targetRevision: main
+      path: features/storage/object-storage/gitops
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: object-storage
+  syncPolicy:
+    automated:
+      selfHeal: true
+      # Pas de prune (ADR-008).
+    syncOptions:
+      - CreateNamespace=true
