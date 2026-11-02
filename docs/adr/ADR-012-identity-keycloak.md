@@ -126,9 +126,15 @@ La proposition est retenue telle quelle, avec les précisions suivantes :
   partagée en est le thérapeute) vivent dans l'application, pas dans
   Keycloak — lui donner des rôles métier reviendrait à donner à
   inner-riddle des droits d'administration sur Keycloak. Keycloak ne
-  porte que l'identité (D-58). Le rôle client `reader` (lecture seule,
-  intérim avant IR-046) peut être omis s'il n'y a pas encore
-  d'utilisateur en lecture seule.
+  porte que l'identité (D-58).
+- **Précision (2026-10-29) : aucun rôle métier, ni de realm ni de client,
+  pour toutes les applications de la plateforme.** Chaque application
+  stocke ses droits dans sa base et les donne elle-même (inner-riddle :
+  partage d'une carte, droit de suggérer, D-59 et D-72 ; fact-check :
+  ADR-003 de son dépôt). Les actions d'exploitation restent en ligne de
+  commande dans le pod, protégées par l'accès au cluster. Le rôle client
+  `reader` d'inner-riddle n'est pas déclaré dans le realm et sera retiré
+  de l'application (IR-065).
 - **E-mails** : aucun relais SMTP pour l'instant. Changement de mot de
   passe et 2FA par chaque utilisateur depuis sa console de compte
   Keycloak (lien déjà prévu dans l'application, IR-045) ; réinitialisation
