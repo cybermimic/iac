@@ -422,7 +422,7 @@ Retour arrière : remettre `targetRevision: v0.5.0` **et** restaurer la
 copie SQLite `backup-v0-6-0` (procédure « Restaurer toute la base » du
 dépôt inner-riddle, `docs/deployment.md`).
 
-### 13. Version `v0.7.0` — préparé
+### 13. Version `v0.7.0` — ✅ en production
 
 Aucun rôle global : tous les droits viennent du partage des cartes (D-78
 du dépôt inner-riddle, conforme à l'ADR-012 : Keycloak ne porte que
