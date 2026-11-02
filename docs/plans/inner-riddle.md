@@ -167,11 +167,10 @@ ADR-008 acceptée, `Application` racine appliquée, app-of-apps active sur
 `vault` → `https://192.168.1.243:8200` : **`Valid`** depuis que l'opérateur
 a configuré Vault (commandes ci-dessous, faites le 2026-10-12).
 
-Suite possible (durcissement) : Vault avertit que le rôle
-`external-secrets` n'a pas d'`audience` ; en ajouter une (`vault write
-auth/kubernetes/role/external-secrets audience=vault …` + `audiences:
-[vault]` dans `serviceAccountRef` du `ClusterSecretStore`) restreindrait les
-jetons acceptés à ceux émis pour Vault.
+Durcissement (2026-10-20) : le rôle `external-secrets` exige l'audience
+`vault`, et le `ClusterSecretStore` demande ses jetons pour cette audience
+(`audiences: [vault]`). Vault n'accepte plus que les jetons émis pour lui.
+Voir `features/security/external-secrets/README.md`.
 
 - 👤 Dans son terminal (le token Vault ne passe jamais par un agent), via
   la CLI du pod (déjà configurée pour `https://127.0.0.1:8200` et la CA
