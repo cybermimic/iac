@@ -15,4 +15,7 @@ path "secret/data/fleet-manager/*"   { capabilities = ["read"] }
 path "secret/data/registry/*"        { capabilities = ["read"] }
 path "secret/data/actions-runners/*" { capabilities = ["read"] }
 path "secret/data/argocd/*"          { capabilities = ["read"] }
+# Secrets GÉNÉRÉS (ADR-014, P1) : External Secrets les écrit (PushSecret,
+# IfNotExists), un chemin exact par secret, jamais un joker en écriture.
+path "secret/data/fact-check/postgres" { capabilities = ["create", "update", "read"] }
 path "secret/data/keycloak/*"        { capabilities = ["read"] }

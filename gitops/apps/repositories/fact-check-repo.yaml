@@ -1,0 +1,31 @@
+# Accès d'ArgoCD au dépôt PRIVÉ cybermimic/fact-check : clé de
+# déploiement SSH en lecture seule, rangée dans Vault par l'opérateur
+# (docs/plans/fact-check.md, étape 5). External Secrets fabrique le
+# Secret « repository » qu'ArgoCD reconnaît par son label. github.com fait
+# partie des clés d'hôte SSH connues par défaut d'ArgoCD.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: repo-fact-check
+  namespace: argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: repo-fact-check
+    creationPolicy: Owner
+    template:
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      data:
+        type: git
+        url: git@github.com:cybermimic/fact-check.git
+        sshPrivateKey: "{{ .ssh_private_key }}"
+  data:
+    - secretKey: ssh_private_key
+      remoteRef:
+        key: argocd/repo-fact-check
+        property: ssh_private_key

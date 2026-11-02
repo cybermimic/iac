@@ -1,0 +1,63 @@
+# Application business fact-check (dépôt privé, ADR-002) : ingestion des
+# données publiques et catalogue de traçabilité. Ce repo ne contient que le
+# contrat de déploiement ; le chart vit avec le code (deploy/chart).
+# Pas encore exposée : aucune API ni interface (ADR-009 : à ajouter à
+# public_namespaces le jour où elle aura un Ingress).
+#
+# Synchronisation MANUELLE (application business, ADR-002 / ADR-008) :
+# changer de version = modifier targetRevision ici (PR), puis « Sync »
+# dans ArgoCD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fact-check
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: git@github.com:cybermimic/fact-check.git # accès : repositories/fact-check-repo.yaml
+      targetRevision: v0.1.0 # version déployée (étiquette publiée par la CI)
+      path: deploy/chart
+      helm:
+        valuesObject:
+          image:
+            registry: 192.168.1.242
+          imagePullSecrets:
+            - name: registry-pull
+          # Garage (storage/object-storage), joignable depuis ce namespace
+          # seulement (NetworkPolicy de la feature).
+          s3:
+            endpoint: http://garage.object-storage.svc:3900
+            region: garage
+            bucket: fact-check
+          # Vault : secret/fact-check/s3 (access_key_id, secret_access_key),
+          # secret/fact-check/postgres (password, hexadécimal).
+          externalSecret:
+            enabled: true
+            secretStoreRef:
+              name: vault
+              kind: ClusterSecretStore
+          postgres:
+            storage:
+              size: 10Gi
+              storageClass: local-path
+          # Nœud unique, qui est aussi control-plane.
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+    # Pull secret du registre.
+    - repoURL: https://github.com/cybermimic/iac.git
+      targetRevision: main
+      path: gitops/fact-check
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: fact-check
+  syncPolicy:
+    # Pas de bloc « automated » : synchronisation manuelle.
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        # Les pods du chart respectent la politique « restricted ».
+        pod-security.kubernetes.io/enforce: restricted
