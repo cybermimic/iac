@@ -1,0 +1,69 @@
+# Application business trade-monitor (dépôt privé, ADR-002) : outil
+# personnel d'aide à l'investissement, SERVICE INTERNE sur
+# https://192.168.1.246 (LAN et VPN seulement, jamais public : pas
+# d'ingress). Ce repo ne contient que le contrat de déploiement ; le chart
+# vit avec le code (deploy/chart).
+#
+# Synchronisation MANUELLE (application business, ADR-002 / ADR-008) :
+# changer de version = modifier targetRevision ici (PR), puis « Sync »
+# dans ArgoCD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trade-monitor
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: git@github.com:cybermimic/trade-monitor.git # accès : repositories/trade-monitor-repo.yaml
+      targetRevision: v0.1.0 # version déployée (étiquette publiée par la CI)
+      path: deploy/chart
+      helm:
+        valuesObject:
+          image:
+            registry: 192.168.1.242
+          imagePullSecrets:
+            - name: registry-pull
+          # Une IP par service interne, qui termine lui-même son TLS
+          # (docs/platform-overview.md) : nginx du frontend, port 443.
+          service:
+            type: LoadBalancer
+            loadBalancerIP: 192.168.1.246
+          tls:
+            certificate:
+              enabled: true
+              ipAddresses: [192.168.1.246]
+              issuerRef:
+                group: cert-manager.io
+                kind: ClusterIssuer
+                name: homelab-ca
+          persistence:
+            storageClass: local-path
+          # Clé Alpha Vantage, facultative (sans elle, une autre source de
+          # cours est utilisée).
+          externalSecret:
+            enabled: true
+            secretStoreRef:
+              name: vault
+              kind: ClusterSecretStore
+            remoteKey: trade-monitor/market-data # propriété alpha_vantage_api_key
+          # Nœud unique, qui est aussi control-plane.
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+    # Pull secret du registre.
+    - repoURL: https://github.com/cybermimic/iac.git
+      targetRevision: main
+      path: gitops/trade-monitor
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trade-monitor
+  syncPolicy:
+    # Pas de bloc « automated » : synchronisation manuelle.
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        # Les pods du chart respectent la politique « restricted ».
+        pod-security.kubernetes.io/enforce: restricted

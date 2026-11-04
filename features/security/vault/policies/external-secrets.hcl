@@ -12,6 +12,7 @@
 
 path "secret/data/inner-riddle/*"    { capabilities = ["read"] }
 path "secret/data/fleet-manager/*"   { capabilities = ["read"] }
+path "secret/data/trade-monitor/*"   { capabilities = ["read"] }
 path "secret/data/registry/*"        { capabilities = ["read"] }
 path "secret/data/actions-runners/*" { capabilities = ["read"] }
 path "secret/data/argocd/*"          { capabilities = ["read"] }

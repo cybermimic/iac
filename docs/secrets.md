@@ -39,11 +39,13 @@ versionnée : [`features/security/vault/policies/external-secrets.hcl`](../featu
 | Chemin | Propriétés | Nature | Consommateurs | Recréer |
 |---|---|---|---|---|
 | `inner-riddle/auth` | `session_secret` ; `oidc_client_secret` ; `accounts` (plus lu depuis le mode `oidc`) | Générée | inner-riddle ; `keycloak-config-cli` (même `oidc_client_secret` des deux côtés) | [plan inner-riddle](plans/inner-riddle.md), commandes E ; [Keycloak](../features/security/keycloak/README.md) |
-| `registry/push` | `username`, `password` | Générée | Copiés dans les secrets GitHub du dépôt inner-riddle (`REGISTRY_USER`, `REGISTRY_PASSWORD`) | [plan inner-riddle](plans/inner-riddle.md), commandes B |
+| `registry/push` | `username`, `password` | Générée | Copiés dans les secrets GitHub des dépôts inner-riddle et trade-monitor (`REGISTRY_USER`, `REGISTRY_PASSWORD`) | [plan inner-riddle](plans/inner-riddle.md), commandes B |
 | `registry/pull` | `username`, `password` | Générée | `registry-pull` (pull secret) des namespaces applicatifs | idem |
 | `registry/htpasswd` | `htpasswd` (empreintes bcrypt de push et pull) | Générée, **dérivée** de `registry/push` et `registry/pull` | Zot | idem (les trois ensemble) |
 | `actions-runners/github-app` | `github_app_id`, `github_app_installation_id`, `github_app_private_key` | **Tiers** (GitHub App) | ARC, namespace `arc-runners` | Nouvelle clé privée dans GitHub (organisation → GitHub Apps), [plan inner-riddle](plans/inner-riddle.md) commandes D |
 | `argocd/repo-inner-riddle` | `ssh_private_key` | **Tiers** : clé générée localement, partie publique enregistrée comme clé de déploiement GitHub | ArgoCD | [plan inner-riddle](plans/inner-riddle.md), commandes C |
+| `trade-monitor/market-data` | `alpha_vantage_api_key` | **Tiers** (clé d'API du fournisseur de cours), **facultatif** | trade-monitor | Nouvelle clé chez le fournisseur ; [plan trade-monitor](plans/trade-monitor.md), commandes D |
+| `argocd/repo-trade-monitor` | `ssh_private_key` | **Tiers** : clé générée localement, partie publique enregistrée comme clé de déploiement GitHub | ArgoCD | [plan trade-monitor](plans/trade-monitor.md), commandes C |
 | `keycloak/admin` | `username`, `password` | Générée | Keycloak, `keycloak-config-cli` | [Keycloak](../features/security/keycloak/README.md) |
 | `keycloak/postgres` | `username`, `password` | Générée, **liée aux données** (base de Keycloak : comptes, realms) | PostgreSQL de Keycloak | idem ; restaurer la base demande l'ancienne valeur |
 
@@ -70,7 +72,7 @@ Régénérés automatiquement sur une infra vierge ; rien à faire.
 | `argocd/argocd-initial-admin-secret`, `argocd/argocd-secret`, `argocd/argocd-redis` | ArgoCD | Nouveau mot de passe admin ArgoCD après reconstruction |
 | `cert-manager/letsencrypt-account-key`, `cert-manager/letsencrypt-staging-account-key` | cert-manager | Nouveau compte Let's Encrypt (limites de débit de Let's Encrypt à garder en tête) |
 | `cert-manager/cert-manager-webhook-ca`, `external-secrets/external-secrets-webhook`, `metallb-system/metallb-webhook-cert`, `metallb-system/metallb-memberlist` | Les composants | Internes |
-| `*-tls` (`vault-listener-tls`, `zot-tls`, `argocd-server-tls`, `keycloak-*-tls`, `inner-riddle-tls`) | cert-manager (CA interne ou Let's Encrypt) | Réémis seuls, **à condition** que la CA interne soit restaurée (sinon voir section 1) |
+| `*-tls` (`vault-listener-tls`, `zot-tls`, `argocd-server-tls`, `keycloak-*-tls`, `inner-riddle-tls`, `trade-monitor-tls`) | cert-manager (CA interne ou Let's Encrypt) | Réémis seuls, **à condition** que la CA interne soit restaurée (sinon voir section 1) |
 | `arc-systems/*-listener-config`, `arc-runners/*-runner-*` | ARC | Jetons d'enregistrement éphémères |
 
 ## 4. Secrets hors du cluster
@@ -78,6 +80,7 @@ Régénérés automatiquement sur une infra vierge ; rien à faire.
 | Où | Secret | Source |
 |---|---|---|
 | Dépôt GitHub `cybermimic/inner-riddle` | `REGISTRY_USER`, `REGISTRY_PASSWORD` | Copie de `secret/registry/push` |
+| Dépôt GitHub `cybermimic/trade-monitor` | `REGISTRY_USER`, `REGISTRY_PASSWORD` | Copie de `secret/registry/push` |
 | Dépôt GitHub `cybermimic/fact-check` (prévu, iac #26) | `REGISTRY_USER`, `REGISTRY_PASSWORD` | Copie de `secret/registry/push` |
 | Inventaire Ansible local (`bootstrap/ansible/inventory/hosts.yml`, ignoré par git) | Aucun secret ; mot de passe sudo saisi à chaque exécution (`-K`) | — |
 
