@@ -29,7 +29,8 @@ le LAN d'une Freebox Pop (Freebox OS 4.13), qui fait routeur, DHCP et DNS.
 | `192.168.1.243` | **Vault** — `https://192.168.1.243:8200` | Terraform (`vault_load_balancer_ip`) |
 | `192.168.1.244` | **ArgoCD** — `https://192.168.1.244` | Terraform (`argocd_load_balancer_ip`) |
 | `192.168.1.245` | **Keycloak — console d'administration** — `https://192.168.1.245:8443`, jamais sur le nom public ([ADR-012](adr/ADR-012-identity-keycloak.md)) | ArgoCD (`gitops/apps/keycloak.yaml`) |
-| `192.168.1.246` – `.250` | Services internes futurs | — |
+| `192.168.1.246` | **trade-monitor** — `https://192.168.1.246` (service interne, TLS par l'application) — [plan](plans/trade-monitor.md) | ArgoCD (`gitops/apps/trade-monitor.yaml`) |
+| `192.168.1.247` – `.250` | Services internes futurs | — |
 | `10.244.0.0/16` | IP des pods (Calico) — invisibles depuis le LAN | Calico (voir [runbook](runbooks/calico-pod-cidr-migration.md)) |
 | `10.96.0.0/12` | IP internes des Services Kubernetes (`ClusterIP`) | kubeadm |
 

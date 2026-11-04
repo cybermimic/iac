@@ -20,6 +20,7 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 | `gitops/apps/arc-runners-inner-riddle.yaml` | Scale set `homelab` de `cybermimic/inner-riddle` (`arc-runners`), chart `gha-runner-scale-set` 0.15.0 ; livre aussi les ressources partagées du namespace (ligne suivante) |
 | `gitops/apps/arc-runners-fact-check.yaml` | Scale set `fact-check` de `cybermimic/fact-check`, même chart ; `minRunners: 0`, `maxRunners: 1` |
 | `gitops/apps/arc-runners-fleet-manager.yaml` | Scale set `fleet-manager` de `cybermimic/fleet-manager`, même chart ; `minRunners: 0`, `maxRunners: 1` |
+| `gitops/apps/arc-runners-trade-monitor.yaml` | Scale set `trade-monitor` de `cybermimic/trade-monitor`, même chart ; `minRunners: 0`, `maxRunners: 1` |
 | `gitops/inner-riddle/` (ici) | Ressources **partagées par tout le namespace** `arc-runners`, malgré le nom du dossier : `ExternalSecret` de la GitHub App, `ConfigMap` de la CA interne, `NetworkPolicy` (`podSelector: {}`) |
 
 ## Fonctionnement
@@ -52,7 +53,7 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 - Une **GitHub App** de l'organisation (`cybermimic-homelab-runners`),
   installée sur les seuls dépôts autorisés (création : étape 6 du plan).
   Accès limité le 2026-10-28 à `inner-riddle`, `fact-check` et
-  `fleet-manager` (*Only select repositories*) : elle était installée sur
+  `fleet-manager` (*Only select repositories*), puis `trade-monitor` : elle était installée sur
   tous les dépôts, `iac` public compris. Vérifier :
   `gh api orgs/cybermimic/installations --jq '.installations[].repository_selection'`
   → `selected`.
@@ -61,7 +62,7 @@ Livré par **ArgoCD** ([ADR-008](../../../docs/adr/ADR-008-gitops-layout.md)) :
 
 Contrôleur + un listener par scale set : ~50-100 Mi chacun. Runner prêt au
 repos (runner + dockerd) : ~200-300 Mi pour inner-riddle ; aucun pour
-fact-check ni fleet-manager (`minRunners: 0`). Pendant un job : ~1-3 Gi par runner selon le build,
+fact-check, fleet-manager ni trade-monitor (`minRunners: 0`). Pendant un job : ~1-3 Gi par runner selon le build,
 deux runners au plus. Stockage : `emptyDir` (effacé à la fin du job).
 
 ## Ajouter un dépôt (privé) autorisé
@@ -83,7 +84,7 @@ deux runners au plus. Stockage : `emptyDir` (effacé à la fin du job).
 ## Vérification
 
 ```bash
-kubectl -n argocd get application arc-controller arc-runners-inner-riddle arc-runners-fact-check arc-runners-fleet-manager   # Synced, Healthy
+kubectl -n argocd get application arc-controller arc-runners-inner-riddle arc-runners-fact-check arc-runners-fleet-manager arc-runners-trade-monitor   # Synced, Healthy
 kubectl -n arc-runners get externalsecret arc-github-app                    # SecretSynced
 kubectl -n arc-systems get pods                                             # contrôleur + listener Running
 ```
